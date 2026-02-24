@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agents Onboarding"
+  short_description: "Create/refine AGENTS.md with architecture depth"
+  default_prompt: "Use $agents-onboarding to create or update this repository's AGENTS.md with reliable local validation guidance, architecture overview, and compatibility-safe coding rules."

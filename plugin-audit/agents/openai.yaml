@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plugin Audit"
+  short_description: "Deep WP plugin audit with traceability"
+  default_prompt: "Use $plugin-audit to audit this WordPress plugin and produce plugin-audit.md with grouped, evidence-backed remediation tasks."
