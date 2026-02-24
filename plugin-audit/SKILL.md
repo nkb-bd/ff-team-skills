@@ -13,6 +13,8 @@ Use this skill to run a deep WordPress plugin audit and produce one actionable b
 - Group findings by area, then by severity.
 - Base output on `references/plugin-audit-template.md`.
 - Keep findings deduplicated and implementation-ready.
+- Add an `Executive Findings Table` immediately after the executive summary.
+- Include one summary-table row per finding with a link to that finding's detailed entry.
 
 ## Execution Model
 
@@ -42,10 +44,19 @@ Every finding must include:
 - `Severity` (`Critical` | `High` | `Medium` | `Low`)
 - `Confidence` (`High` | `Med` | `Low`)
 - `File:line`
+- `Short finding` (single-line label for summary table)
 - `Evidence` (short code quote or explicit call path)
 - `Impact`
 - `Recommended fix`
 - `Task statement` (one clear implementation task)
+
+## Finding Link Rules
+
+- Make each detailed finding linkable with a stable anchor in grouped findings:
+  - Use anchor format `finding-<normalized-id>`, where normalized ID is lowercase and non-alphanumeric characters replaced with `-`.
+  - Example: `SEC-001` becomes `finding-sec-001`.
+- In the executive findings table, link each ID (or a dedicated details column) to its anchor using markdown fragments.
+- Ensure a 1:1 mapping between summary-table rows and detailed findings.
 
 ## Security Checks
 
@@ -96,6 +107,7 @@ For each UI trigger that reaches project code (buttons, links, forms, admin acti
 Populate `plugin-audit.md` with these sections in order:
 
 1. Executive summary (top risks).
-2. Grouped findings by area and severity.
-3. Prioritized implementation backlog (quick wins first).
-4. Needs manual verification.
+2. Executive findings table (one row per finding, each linking to its detailed finding anchor).
+3. Grouped findings by area and severity (with stable anchors per finding).
+4. Prioritized implementation backlog (quick wins first).
+5. Needs manual verification.
