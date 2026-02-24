@@ -10,11 +10,14 @@ Use this skill to run a deep WordPress plugin audit and produce one actionable b
 ## Required Output
 
 - Create `plugin-audit.md` at the repository root.
-- Group findings by area, then by severity.
+- Group detailed findings by severity (`Critical`, `High`, `Medium`, `Suggestion`), not by area.
 - Base output on `references/plugin-audit-template.md`.
 - Keep findings deduplicated and implementation-ready.
-- Add an `Executive Findings Table` immediately after the executive summary.
-- Include one summary-table row per finding with a link to that finding's detailed entry.
+- In the executive summary, include a severity-count table with columns `Severity` and `Count`.
+- Use rows for `CRITICAL`, `HIGH`, `MEDIUM`, and `SUGGESTION` in that table.
+- Add a `Table of Contents` section that links to every detailed finding.
+- Do not render grouped findings as tables; each finding must be a heading with field bullets.
+- In each finding body, do not repeat finding key or `Severity` as bullet fields.
 
 ## Execution Model
 
@@ -39,12 +42,10 @@ If the runtime cannot spawn literal sub-agents, emulate these as five separate p
 
 Every finding must include:
 
-- `ID`
 - `Area` (`Security` | `Optimization` | `Traceability`)
-- `Severity` (`Critical` | `High` | `Medium` | `Low`)
 - `Confidence` (`High` | `Med` | `Low`)
 - `File:line`
-- `Short finding` (single-line label for summary table)
+- `Short finding` (single-line label used in headings and table of contents)
 - `Evidence` (short code quote or explicit call path)
 - `Impact`
 - `Recommended fix`
@@ -52,11 +53,13 @@ Every finding must include:
 
 ## Finding Link Rules
 
-- Make each detailed finding linkable with a stable anchor in grouped findings:
-  - Use anchor format `finding-<normalized-id>`, where normalized ID is lowercase and non-alphanumeric characters replaced with `-`.
-  - Example: `SEC-001` becomes `finding-sec-001`.
-- In the executive findings table, link each ID (or a dedicated details column) to its anchor using markdown fragments.
-- Ensure a 1:1 mapping between summary-table rows and detailed findings.
+- Make each detailed finding a markdown heading in this format:
+  - `#### <SEVERITY>-NN: <Short finding>` (example: `#### HIGH-02: Missing nonce check on admin action`)
+- Generate finding keys with sequential numbering inside each severity group (`CRITICAL-01`, `CRITICAL-02`, `HIGH-01`, etc.).
+- Build the `Table of Contents` using markdown links to those finding headings.
+- Ensure a 1:1 mapping between table-of-contents entries and detailed findings.
+- Treat the heading as the finding key source and the parent severity section as the severity source.
+- Required bullet fields inside each finding are: `Area`, `Confidence`, `File:line`, `Evidence`, `Impact`, `Recommended fix`, `Task statement`.
 
 ## Security Checks
 
@@ -106,8 +109,8 @@ For each UI trigger that reaches project code (buttons, links, forms, admin acti
 
 Populate `plugin-audit.md` with these sections in order:
 
-1. Executive summary (top risks).
-2. Executive findings table (one row per finding, each linking to its detailed finding anchor).
-3. Grouped findings by area and severity (with stable anchors per finding).
+1. Executive summary (top risks + severity-count table).
+2. Table of contents (one link per finding).
+3. Findings by severity (non-tabular detail blocks per finding).
 4. Prioritized implementation backlog (quick wins first).
 5. Needs manual verification.

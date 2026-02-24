@@ -3,77 +3,92 @@
 ## 1) Executive Summary
 
 - Overall risk level:
+- Severity snapshot:
+
+| Severity | Count |
+|---|---|
+| CRITICAL | 0 |
+| HIGH | 0 |
+| MEDIUM | 0 |
+| SUGGESTION | 0 |
+
 - Top 3 risks:
   - 
   - 
   - 
 - Audit scope notes:
 
-## 2) Grouped Findings
+## 2) Table of Contents
 
-### Security
+- [CRITICAL-01: Example critical finding](#critical-01-example-critical-finding)
+- [HIGH-01: Example high finding](#high-01-example-high-finding)
+- [MEDIUM-01: Example medium finding](#medium-01-example-medium-finding)
+- [SUGGESTION-01: Example suggestion finding](#suggestion-01-example-suggestion-finding)
 
-#### Critical
+## 3) Findings by Severity
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+Use this format for every finding block:
+- Do not include `Finding key:` or `Severity:` bullets (they are represented by heading and parent severity section).
+- Include only: `Area`, `Confidence`, `File:line`, `Evidence`, `Impact`, `Recommended fix`, `Task statement`.
 
-#### High
+### Critical
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+#### CRITICAL-01: Example critical finding
 
-#### Medium
+- Area:
+- Confidence:
+- File:line:
+- Evidence:
+- Impact:
+- Recommended fix:
+- Task statement:
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+### High
 
-#### Low
+#### HIGH-01: Example high finding
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+- Area:
+- Confidence:
+- File:line:
+- Evidence:
+- Impact:
+- Recommended fix:
+- Task statement:
 
-### Optimization
+### Medium
 
-#### High
+#### MEDIUM-01: Example medium finding
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+- Area:
+- Confidence:
+- File:line:
+- Evidence:
+- Impact:
+- Recommended fix:
+- Task statement:
 
-#### Medium
+### Suggestion
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
+#### SUGGESTION-01: Example suggestion finding
 
-#### Low
+- Area:
+- Confidence:
+- File:line:
+- Evidence:
+- Impact:
+- Recommended fix:
+- Task statement:
 
-| ID | Confidence | File:line | Evidence | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
-
-### Traceability
-
-#### High
-
-| ID | Confidence | File:line | Evidence (call path / break point) | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
-
-#### Medium
-
-| ID | Confidence | File:line | Evidence (call path / break point) | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
-
-#### Low
-
-| ID | Confidence | File:line | Evidence (call path / break point) | Impact | Recommended fix | Task statement |
-|---|---|---|---|---|---|---|
-
-## 3) Prioritized Backlog (Quick Wins First)
+## 4) Prioritized Backlog (Quick Wins First)
 
 1. [ ]
 2. [ ]
 3. [ ]
 
-## 4) Needs Manual Verification
+## 5) Needs Manual Verification
 
-| ID | Area | File:line | Why uncertain | Manual test to confirm |
-|---|---|---|---|---|
+- Finding key:
+  - Area:
+  - File:line:
+  - Why uncertain:
+  - Manual test to confirm:
