@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Descriptor"
+  short_description: "Write concise why-first PR descriptions"
+  default_prompt: "Use $pr-descriptor to draft a concise PR description from my current branch with only meaningful template sections."

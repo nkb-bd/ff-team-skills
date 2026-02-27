@@ -9,6 +9,7 @@ Reusable AI-agent skill packs for WordPress-focused engineering workflows at WPM
 | `agents-onboarding` | Create or refresh repository onboarding docs for coding agents, with architecture depth and local validation focus. | `AGENTS.md` + `docs/agent-architecture.md` (or `AGENT_ARCHITECTURE.md`) |
 | `php-cs-fixer-style` | Enforce shared PHP-CS-Fixer formatting rules when editing or reviewing PHP code. | Formatter-compliant PHP changes |
 | `plugin-audit` | Run a deep WordPress plugin audit across security, optimization, and end-to-end traceability. | `plugin-audit.md` |
+| `pr-descriptor` | Generate concise, why-first PR descriptions from actual git changes using a project PR template. | Reviewer-ready PR markdown |
 
 ## Repository layout
 
@@ -22,10 +23,14 @@ agent-skills/
 │   ├── SKILL.md
 │   ├── agents/openai.yaml
 │   └── references/.php-cs-fixer.php
-└── plugin-audit/
+├── plugin-audit/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── references/plugin-audit-template.md
+└── pr-descriptor/
     ├── SKILL.md
     ├── agents/openai.yaml
-    └── references/plugin-audit-template.md
+    └── references/pull_request_template.default.md
 ```
 
 ## Installation
@@ -49,12 +54,14 @@ agent-skills/
 - `Use $agents-onboarding to create or update AGENTS.md for this repo.`
 - `Use $php-cs-fixer-style to format this PHP change.`
 - `Use $plugin-audit to audit this plugin and produce plugin-audit.md.`
+- `Use $pr-descriptor to draft a concise, why-first PR description from my current branch.`
 
 ### Claude examples
 
 - `Use the agents-onboarding workflow from the attached SKILL.md to create or update AGENTS.md and docs/agent-architecture.md.`
 - `Apply the php-cs-fixer-style SKILL.md rules to this PHP diff and return a formatter-compliant patch.`
 - `Run the plugin-audit SKILL.md workflow and produce plugin-audit.md using the template from references/plugin-audit-template.md.`
+- `Use the pr-descriptor SKILL.md workflow to fill my pull request template from the git diff.`
 
 ## Skill conventions used here
 
@@ -68,3 +75,4 @@ Each skill directory contains:
 
 - `php-cs-fixer-style` prefers a repo-local `.php-cs-fixer.php`; otherwise it falls back to its bundled `references/.php-cs-fixer.php`.
 - `plugin-audit` is intentionally evidence-driven and uses a fixed report structure defined in `references/plugin-audit-template.md`.
+- `pr-descriptor` reads a repo PR template first and falls back to `references/pull_request_template.default.md`.
