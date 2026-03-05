@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debugger"
+  short_description: "Find and verify WP plugin bugs"
+  default_prompt: "Use $debugger on this plugin. Run Finder -> Verifier -> Feedback, keep only verifier-confirmed issues, generate debugger-report.md with per-bug feedback notes, do not include template instruction/placeholder text, omit empty severity sections, and classify public internal triggers as Low-Hardening unless concrete auth/data impact is proven."
