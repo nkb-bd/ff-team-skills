@@ -11,6 +11,7 @@ Reusable AI-agent skill packs for WordPress-focused engineering workflows at WPM
 | `debugger` | Find real WordPress plugin bugs with a finder/verifier feedback loop that reduces false positives. | `debugger-report.md` |
 | `plugin-audit` | Run a deep WordPress plugin audit across security, optimization, and end-to-end traceability. | `plugin-audit.md` |
 | `pr-descriptor` | Generate concise, why-first PR descriptions from actual git changes using a project PR template. | Reviewer-ready PR markdown |
+| `pr-reviewer` | Run a 3-pass PR review with manifest extraction, 5-workstream audit, and verification pass. | Hosted PR review markdown in `/Volumes/Workspace/pr-reviews/` |
 
 ## Repository layout
 
@@ -36,6 +37,10 @@ agent-skills/
     ├── SKILL.md
     ├── agents/openai.yaml
     └── references/pull_request_template.default.md
+└── pr-reviewer/
+    ├── SKILL.md
+    ├── agents/openai.yaml
+    └── references/
 ```
 
 ## Installation
@@ -61,6 +66,7 @@ agent-skills/
 - `Use $debugger on this plugin. Run Finder -> Verifier -> Feedback, keep only verifier-confirmed issues, and generate debugger-report.md with per-bug feedback notes.`
 - `Use $plugin-audit to audit this plugin and produce plugin-audit.md.`
 - `Use $pr-descriptor to draft a concise, why-first PR description from my current branch.`
+- `Use $pr-reviewer to review this PR line-by-line and save the verified report to /Volumes/Workspace/pr-reviews/.`
 
 ### Claude examples
 
@@ -69,6 +75,7 @@ agent-skills/
 - `Use the debugger SKILL.md workflow to find, verify, and prioritize real plugin bugs in debugger-report.md with per-bug feedback notes in the same file.`
 - `Run the plugin-audit SKILL.md workflow and produce plugin-audit.md using the template from references/plugin-audit-template.md.`
 - `Use the pr-descriptor SKILL.md workflow to fill my pull request template from the git diff.`
+- `Use the pr-reviewer SKILL.md workflow to review this GitHub PR and save the verified report to /Volumes/Workspace/pr-reviews/.`
 
 ## Skill conventions used here
 
@@ -84,3 +91,4 @@ Each skill directory contains:
 - `plugin-audit` is intentionally evidence-driven and uses a fixed report structure defined in `references/plugin-audit-template.md`.
 - `debugger` separates finder and verifier passes, keeps feedback in `debugger-report.md`, includes a WPManageNinja structure map derived from FluentCRM, and calibrates public-trigger findings to `Low-Hardening` unless concrete auth/data impact is proven.
 - `pr-descriptor` reads a repo PR template first and falls back to `references/pull_request_template.default.md`.
+- `pr-reviewer` is intended for GitHub PR review workflows and writes hosted review artifacts under `/Volumes/Workspace/pr-reviews/`.

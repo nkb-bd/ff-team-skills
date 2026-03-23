@@ -31,12 +31,19 @@ Run exactly five audit workstreams (sub-agents):
 
 If the runtime cannot spawn literal sub-agents, emulate these as five separate passes and keep the same output boundaries.
 
+## Auditor Mindset
+
+Approach this audit as a paranoid senior security engineer reviewing code written by a junior developer who is unfamiliar with security and performance implications. Assume every input is malicious, every permission check is probably missing or wrong, every external call is a potential vulnerability, and every database query is potentially unbounded. Your job is to prove the code is safe — not assume it is.
+
+For optimization: assume the site has 100,000+ users, 1M+ database records, and every hook fires on every page load. A query that looks harmless on a dev site with 10 records is a production outage waiting to happen.
+
 ## Scope Rules
 
 - Analyze only code present in the repository.
 - Do not invent files, functions, hooks, routes, or call paths.
 - Favor real exploitable issues and measurable bottlenecks over style comments.
 - If uncertain, mark the item as `Needs manual verification`.
+- Cross-plugin model calls (e.g. `ExternalPlugin\Model::get()`) are IN scope for performance analysis — treat them as if you own the model and know it hits the database.
 
 ## Required Finding Schema
 
@@ -78,6 +85,14 @@ Check at minimum:
 - Dangerous dynamic execution (`eval`, dynamic includes/requires, shell calls).
 - Secret/token exposure and insecure option storage.
 
+**Additional security patterns to catch:**
+- OAuth/auth callbacks that don't validate state parameters or bind to a specific initiating session — allows CSRF-style account hijacking.
+- Any `wp_remote_get/post` with user-controlled URLs (SSRF).
+- Missing `sanitize_*` before storing to database even if `prepare()` is used (stored XSS after retrieval).
+- HTML strings built from external plugin data (e.g. product titles, course names, user-provided fields) injected into `body_html`, `innerHTML`, or similar without escaping.
+- REST endpoints or AJAX handlers where `permission_callback` returns `__return_true` or is missing.
+- `wp_set_auth_cookie` or privilege changes without re-authentication.
+
 ## Optimization Checks
 
 Check at minimum:
@@ -87,6 +102,20 @@ Check at minimum:
 - Hot-path inefficiencies (loops, repeated expensive calls, query patterns).
 - Unnecessary allocations/work in request lifecycle.
 - Overly complex/long functions that hurt maintainability or latency.
+
+**Unbounded query patterns (HIGH priority — catch all of these):**
+- Any `->get()`, `->all()`, `->find()`, `->select()` on a model representing potentially large data (subscribers, users, customers, orders, tickets, posts, comments, transactions, logs) without a `->where()`, `->limit()`, `->take()`, or scope constraint.
+- Cross-plugin model queries loading full tables: e.g. `ExternalPlugin\Subscriber->get()`, `ExternalPlugin\Order::all()` — these load every row in the external plugin's table into memory.
+- Any query inside a WordPress action/filter hook (`add_action`, `add_filter`) that fires on every page load with no caching.
+- `->get()` chained after `->orderBy()` or `->select()` without a `->where()` — the ordering doesn't prevent a full table scan.
+- Any query in a loop: `foreach` / `while` containing a model query = N+1 problem.
+- `$wpdb->get_results()` or `$wpdb->query()` without a `LIMIT` clause on tables that grow with usage.
+- Loading a full collection then filtering in PHP: `->get()->filter()` instead of filtering at the query level.
+
+**Memory and request lifecycle:**
+- Large arrays or collections built in memory from database results.
+- Missing `wp_cache_get`/`wp_cache_set` on repeated identical queries within a request.
+- Transients used for data that changes per-user (shared cache poisoning).
 
 ## Traceability Checks
 
@@ -114,3 +143,9 @@ Populate `plugin-audit.md` with these sections in order:
 3. Findings by severity (non-tabular detail blocks per finding).
 4. Prioritized implementation backlog (quick wins first).
 5. Needs manual verification.
+
+**Empty severity sections:**
+- If a severity level has zero findings, OMIT that section entirely from the report
+- Do NOT include "### Critical" followed by "None." or any placeholder text
+- Only include severity headings that have actual findings under them
+- The severity-count table in executive summary should still show all levels (including 0 counts) for transparency
