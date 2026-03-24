@@ -68,6 +68,7 @@ Every finding must include:
 - Ensure a 1:1 mapping between table-of-contents entries and detailed findings.
 - Treat the heading as the finding key source and the parent severity section as the severity source.
 - Required bullet fields inside each finding are: `Area`, `Confidence`, `File:line`, `Evidence`, `Impact`, `Recommended fix`, `Task statement`.
+- For Critical and High findings, also include: `Verifier note` (one sentence confirming the exploitation path survived Pass 6 scrutiny).
 
 ## Security Checks
 
@@ -128,6 +129,29 @@ For each UI trigger that reaches project code (buttons, links, forms, admin acti
 - Verify validation and transformation boundaries are correct.
 - Verify downstream DB/service calls and returned payload shape.
 - Report any broken chain explicitly with the exact break point.
+
+## Verification Pass (Pass 6)
+
+After completing the five audit workstreams, run a mandatory verification pass over every Critical and High finding before writing the final report.
+
+For each Critical and High candidate:
+
+1. **Re-trace the full exploitability path** — entry point → permission check → handler → data layer → effect. If any step breaks the path, the finding is not confirmed at that severity.
+2. **Check for existing mitigations that the initial pass may have missed:**
+   - Middleware or base controller auth checks not visible at the handler level.
+   - WordPress core protections (e.g. `check_admin_referer`, nonce in a parent hook).
+   - Capability checks in a parent class or trait.
+   - Feature flags or settings that gate the vulnerable path.
+   - Input already sanitized or escaped at an earlier layer.
+3. **Verdict for each finding:**
+   - **Confirmed** — full exploitation path traced end-to-end with direct code evidence. Keep at current severity.
+   - **Downgrade** — path exists but a real mitigation reduces exploitability. Move to Medium or Suggestion with a note explaining what partial protection exists.
+   - **Needs manual verification** — path is plausible but cannot be fully traced without runtime testing. Move to the verification section with the specific uncertainty noted.
+   - **Rejected** — path is broken or finding is based on a misread. Remove from findings entirely.
+4. **Skeptical stance** — actively try to disprove each finding. If you cannot find direct evidence that the protection is missing, do not confirm it. The burden of proof is on the finding, not the defense.
+5. **Add a `Verifier note`** field to every Critical and High finding in the report stating the confirmation reasoning or why it survived scrutiny.
+
+Medium and Suggestion findings do not require this pass — include them as-is from the workstream passes.
 
 ## Prioritization Rules
 
