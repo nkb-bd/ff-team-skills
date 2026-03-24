@@ -9,7 +9,8 @@ Use this skill to run a deep WordPress plugin audit and produce one actionable b
 
 ## Required Output
 
-- Create `plugin-audit.md` at the repository root.
+- Write `plugin-audit.md` to the **output path** specified in the task (e.g. `Output path: /Volumes/Workspace/audits/<repo>/plugin-audit.md`). If no output path is specified, default to the repository root.
+- Before writing: if a file already exists at that path, copy it to `plugin-audit-YYYY-MM-DD.md` in the same directory as an archive.
 - Group detailed findings by severity (`Critical`, `High`, `Medium`, `Suggestion`), not by area.
 - Base output on `references/plugin-audit-template.md`.
 - Keep findings deduplicated and implementation-ready.
