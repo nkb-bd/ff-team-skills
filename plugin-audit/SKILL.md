@@ -95,6 +95,22 @@ Check at minimum:
 - REST endpoints or AJAX handlers where `permission_callback` returns `__return_true` or is missing.
 - `wp_set_auth_cookie` or privilege changes without re-authentication.
 
+**Payment and subscription security (treat as HIGH — never downgrade without a verified mitigation):**
+- Any `wp_ajax_nopriv_` endpoint that can change payment status, mark a submission as paid/failed, or cancel a subscription must verify: (a) the caller owns the target submission/transaction, AND (b) the amount and currency match what was recorded at order creation. Missing either check = High finding, confirmed.
+- Payment intent / token reuse: the payment intent, charge ID, or confirmation token must be bound to a specific submission at creation time and re-verified at confirmation time. A valid intent from a cheap payment must not be reusable to mark a different submission as paid. Look for `handlePaymentSuccess()`, `handlePaymentChargeError()`, and gateway-specific confirmation handlers — check whether they validate intent-to-submission binding before updating status.
+- Subscription/transaction ownership on self-service AJAX routes: any endpoint reachable by a low-privilege role (Subscriber+) that accepts a `subscription_id`, `transaction_id`, or `submission_id` must assert the caller owns that resource. An auth helper that only checks subscription status or payment-method feature availability (e.g. `canCancelSubscription()`) is NOT an ownership check — treat it as a missing auth check and flag it.
+
+**Conditional logic bugs (audit every branch — do not skip):**
+- Always-true / always-false conditions: read every `if` / `else if` / `switch` for PHP truthy traps:
+  - **String literal as condition**: `else if ('some_string')` is always `true` in PHP — the variable is never compared.
+  - Assignment instead of comparison: `if ($x = someValue())` when `=` should be `==`/`===`.
+  - Boolean operator precedence errors: `&&` binds tighter than `||`, so `A && B || C` is `(A && B) || C` — verify compound auth checks group operands as intended. A misplaced `&&`/`||` can flip which branch the authorization logic denies.
+  - Non-empty constant expressions (non-empty array literal, object reference) used as a condition.
+  - Even if the current codebase has a fix for a known instance, scan the rest of the file and related files for the same class of mistake.
+
+**Superglobal sanitization:**
+- `$_REQUEST`, `$_GET`, or `$_POST` assigned wholesale without a whitelist (e.g. `$data = $_REQUEST;`) and then passed to shortcode renderers, HTML output, or database functions. Every field used downstream must be extracted explicitly and run through `sanitize_text_field(wp_unslash(...))` or an equivalent typed sanitizer. Flag any wholesale assignment as at minimum Medium even when downstream re-assignment partially mitigates it, because the unsanitized superglobal may reach other callees before the re-assignment.
+
 ## Optimization Checks
 
 Check at minimum:
