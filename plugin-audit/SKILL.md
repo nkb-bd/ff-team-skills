@@ -20,6 +20,22 @@ Use this skill to run a deep WordPress plugin audit and produce one actionable b
 - Do not render grouped findings as tables; each finding must be a heading with field bullets.
 - In each finding body, do not repeat finding key or `Severity` as bullet fields.
 
+## Report Header Format (mandatory)
+
+The first two lines of every report must be:
+
+```
+# Plugin Audit Report — {PluginName}
+**Branch:** {branch} | **Date:** {YYYY-MM-DD} | **Auditor:** {model} (5-workstream + Pass 6 verification)
+```
+
+Followed by `---` then the report body.
+
+**Why this matters for the pr-analytics dashboard:**
+- The `# h1` line is **stripped** by the dashboard renderer — it is never shown in the report body. The page title in the UI comes from the repo override in `serve_dashboard.ts`, not from the markdown.
+- The `**Branch:** ...` frontmatter line is **hidden for logged-out users** and **visible for logged-in users** only. Write it clearly as a single paragraph line so the renderer can detect and conditionally hide it.
+- Do not skip either line — they are required metadata even though the h1 is not rendered.
+
 ## Execution Model
 
 Run exactly five audit workstreams (sub-agents):

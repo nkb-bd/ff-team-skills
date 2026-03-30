@@ -1,4 +1,7 @@
-# Plugin Audit Report
+# Plugin Audit Report — {PluginName}
+**Branch:** {branch} | **Date:** {YYYY-MM-DD} | **Auditor:** {model} (5-workstream + Pass 6 verification)
+
+---
 
 ## 1) Executive Summary
 
