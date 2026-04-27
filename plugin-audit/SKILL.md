@@ -110,6 +110,13 @@ Check at minimum:
 - HTML strings built from external plugin data (e.g. product titles, course names, user-provided fields) injected into `body_html`, `innerHTML`, or similar without escaping.
 - REST endpoints or AJAX handlers where `permission_callback` returns `__return_true` or is missing.
 - `wp_set_auth_cookie` or privilege changes without re-authentication.
+- **Public nonce is not authorization**: any `wp_ajax_nopriv_` or public REST/AJAX endpoint that relies on a page-localized/frontend nonce must also bind the action to the exact resource being touched (attachment, post, draft, submission, file path, payment, webhook target, etc.). A public nonce plus attacker-chosen `attachment_id`, `post_id`, `path`, `link`, `hash`, or similar identifier is not sufficient authorization.
+- **Delegated capability boundary drift**: when a plugin has custom ACL helpers or plugin-specific roles/capabilities, verify that "user has some plugin capability" does not incorrectly satisfy stronger checks such as settings-manager, full-access, payments-view, or role-manager routes. Compare helper results against `current_user_can(<requested capability>)` at the exact route/action being protected.
+- **Shortcode and rendered-HTML sink rule**: audit every shortcode attribute, dynamic shortcode wrapper, and saved rich-text/message field that can become frontend HTML after plugin rendering. Treat encoded payload forms, nested shortcode construction, `do_shortcode(...)`, and client-side `.html(...)` insertion as first-class XSS sinks, especially when the plugin stores raw shortcode attributes and expands them later.
+- **Secret-read surfaces**: treat integration/config read endpoints as sensitive even when they are "read-only". If a lower-trust delegated manager can retrieve API keys, private app tokens, refresh tokens, webhook secrets, or OAuth credentials through a REST/AJAX settings endpoint, report it as a confirmed disclosure issue.
+- **SSRF with response reflection/logging**: if user-controlled URLs reach `wp_remote_*`, trace whether response body, headers, or status are copied into logs, action notes, admin notices, webhooks history, or API responses. This turns a blind SSRF into an exfiltration path and should be called out explicitly.
+- **Public mail/link relay flows**: unauthenticated or low-privilege endpoints that send emails/messages must prove ownership of the saved object they reference and must rebuild sensitive URLs from trusted server-side state. If caller-controlled `to_email`, `link`, or resume/reset URL values are sent directly, treat it as a real abuse path.
+- **Resource ownership on file/post/delete/update helpers**: for delete/update/populate endpoints, do not stop at nonce verification. Verify the target attachment, post, entry, file path, or draft belongs to the current form/session/user and is inside the intended Fluent Forms-owned resource set.
 
 **Payment and subscription security (treat as HIGH — never downgrade without a verified mitigation):**
 - Any `wp_ajax_nopriv_` endpoint that can change payment status, mark a submission as paid/failed, or cancel a subscription must verify: (a) the caller owns the target submission/transaction, AND (b) the amount and currency match what was recorded at order creation. Missing either check = High finding, confirmed.
@@ -127,6 +134,12 @@ Check at minimum:
 
 **Superglobal sanitization:**
 - `$_REQUEST`, `$_GET`, or `$_POST` assigned wholesale without a whitelist (e.g. `$data = $_REQUEST;`) and then passed to shortcode renderers, HTML output, or database functions. Every field used downstream must be extracted explicitly and run through `sanitize_text_field(wp_unslash(...))` or an equivalent typed sanitizer. Flag any wholesale assignment as at minimum Medium even when downstream re-assignment partially mitigates it, because the unsanitized superglobal may reach other callees before the re-assignment.
+
+**WordPress/Fluent Forms style follow-up sweeps (mandatory when applicable):**
+- Run a dedicated shortcode/rendered-HTML pass after the initial security sweep. Re-check shortcode attributes, saved confirmation/approval/coupon/button messages, modal/button labels, and rich-text settings that later reach `do_shortcode`, `printf`, string-concatenated HTML, or frontend `.html(...)` insertion.
+- Run a delegated-manager pass: enumerate custom capabilities, ACL helpers, route policies, and manager/settings endpoints, then verify lower delegated roles cannot satisfy stronger permissions through helper short-circuits.
+- Run a public-endpoint ownership pass: enumerate all `wp_ajax_nopriv_`, public REST routes, and frontend-localized nonces, then test whether attacker-chosen object IDs/paths can touch resources outside the current form/session/user.
+- Run a secrets-and-integrations pass: enumerate integration settings endpoints, OAuth/token storage readers, webhook/feed config readers, and confirm lower-trust users cannot read global credentials.
 
 ## Optimization Checks
 
@@ -163,6 +176,13 @@ For each UI trigger that reaches project code (buttons, links, forms, admin acti
 - Verify downstream DB/service calls and returned payload shape.
 - Report any broken chain explicitly with the exact break point.
 
+For shared helpers and editor-state infrastructure uncovered during traceability:
+
+- treat helper functions as contract boundaries, not merely implementation detail
+- check how behavior changes when a payload omits keys or returns only a partial managed response
+- inspect backward compatibility with existing saved records and legacy rows, especially when identity moves from positional/index-based handling to ID-based handling
+- call out hidden assumptions explicitly, such as “all rows have IDs” or “override keys are always meaningful”
+
 ## Verification Pass (Pass 6)
 
 After completing the five audit workstreams, run a mandatory verification pass over every Critical and High finding before writing the final report.
@@ -176,6 +196,7 @@ For each Critical and High candidate:
    - Capability checks in a parent class or trait.
    - Feature flags or settings that gate the vulnerable path.
    - Input already sanitized or escaped at an earlier layer.
+   - Resource binding or ownership checks that tie the action to the exact form/session/user/object.
 3. **Verdict for each finding:**
    - **Confirmed** — full exploitation path traced end-to-end with direct code evidence. Keep at current severity.
    - **Downgrade** — path exists but a real mitigation reduces exploitability. Move to Medium or Suggestion with a note explaining what partial protection exists.
@@ -183,6 +204,22 @@ For each Critical and High candidate:
    - **Rejected** — path is broken or finding is based on a misread. Remove from findings entirely.
 4. **Skeptical stance** — actively try to disprove each finding. If you cannot find direct evidence that the protection is missing, do not confirm it. The burden of proof is on the finding, not the defense.
 5. **Add a `Verifier note`** field to every Critical and High finding in the report stating the confirmation reasoning or why it survived scrutiny.
+
+When a candidate finding involves shared helper behavior or state merge semantics, the verifier pass must also try to disprove it by checking:
+
+- omitted response keys
+- `undefined` vs `null` vs empty-string handling
+- legacy saved data without modern identifiers
+- stale async responses after the helper change
+
+When a candidate finding involves a public endpoint, shortcode attribute, delegated-manager boundary, or integration reader, the verifier pass must also try to disprove it by checking:
+
+- whether the nonce is merely anti-CSRF or is actually bound to a specific resource
+- whether the target object is constrained to the current form/session/user/resource set
+- whether a lower delegated capability is accidentally treated as full access by a helper short-circuit
+- whether rendered HTML passes through a real allowlist sanitizer at the final sink, not only at save time
+- whether secrets/tokens are redacted before being returned or logged
+- whether SSRF responses are reflected into logs, notes, or API output
 
 Medium and Suggestion findings do not require this pass — include them as-is from the workstream passes.
 
