@@ -63,6 +63,12 @@ If the runtime cannot spawn literal sub-agents, emulate the same phases sequenti
   - Debug leftovers (`dd`, `die`, `var_dump`, `print_r`) in reachable runtime paths.
   - Cron/action scheduler drift (duplicate scheduling, mismatched hook names, missing deactivation cleanup).
   - Route/policy drift (`withPolicy` group exists but policy method coverage does not match controller actions).
+  - Public frontend nonce misuse: page-localized nonces on `wp_ajax_nopriv_` or public REST that still accept attacker-chosen IDs, paths, links, hashes, or target URLs.
+  - Delegated-role helper drift: custom ACL helpers that treat any plugin capability as equivalent to stronger permissions such as full access, settings access, manager access, or payment visibility.
+  - Shortcode/rendered-HTML sinks: shortcode attributes, nested shortcode builders, rich-text settings, and JSON-returned messages that later reach `do_shortcode(...)`, string-built HTML, or frontend `.html(...)`.
+  - Secret-read endpoints: "read-only" integration/config routes that can leak tokens, secrets, or access credentials to lower-trust delegated users.
+  - SSRF with exfil path: user-controlled outbound requests whose response body/status/headers are reflected into logs, notes, or API output.
+  - Public email/link relay flows: guest endpoints that send attacker-controlled links or emails without proving ownership of the referenced saved object.
 - For each candidate include:
   - `Area` (`Security` | `Functional` | `Data Integrity` | `Compatibility` | `Performance`)
   - `Confidence` (`High` | `Med` | `Low`)
@@ -84,6 +90,10 @@ If the runtime cannot spawn literal sub-agents, emulate the same phases sequenti
   - Public AJAX endpoints (`wp_ajax_nopriv_*`) -> nonce/token verification and least-privilege behavior.
   - Scheduled jobs in `boot/app.php` and handlers -> duplicate/unsynced hook behavior under repeated init.
   - DB version constant -> upgrader path -> migration coverage for schema changes.
+  - Custom ACL helper -> requested route/controller policy -> actual `current_user_can(...)` comparison for the requested permission.
+  - Shortcode attribute/source field -> sanitizer/save path -> final render sink (`do_shortcode`, template echo, JS `.html(...)`, modal/button builder).
+  - Public object-action endpoints -> resource binding check for attachment/post/draft/path/submission ownership within the current form/session/user.
+  - Integration/webhook readers and writers -> whether secrets or remote-response content are disclosed back to delegated users.
 - Reclassify each candidate as exactly one of:
   - `Confirmed`
   - `Rejected`
@@ -91,6 +101,8 @@ If the runtime cannot spawn literal sub-agents, emulate the same phases sequenti
 - Add a short `Verifier note` for every candidate, including the exact break point or guard that determined the verdict.
 - Do not mark `Confirmed` without at least one concrete reproduction path and one code-level evidence point.
 - Do not confirm third-party file findings unless plugin-owned code invokes the vulnerable path.
+- Do not treat a public nonce alone as sufficient mitigation when the endpoint touches a resource chosen by user input.
+- For stored XSS candidates, verify the final rendered sink, not only the save-time sanitizer.
 
 ### Severity Calibration Gate (Verifier-Owned)
 
