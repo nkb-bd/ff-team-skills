@@ -12,6 +12,8 @@ Reusable AI-agent skill packs for WordPress-focused engineering workflows at WPM
 | `plugin-audit` | Run a deep WordPress plugin audit across security, optimization, and end-to-end traceability. | `plugin-audit.md` |
 | `pr-descriptor` | Generate concise, why-first PR descriptions from actual git changes using a project PR template. | Reviewer-ready PR markdown |
 | `pr-reviewer` | Run a 3-pass PR review with manifest extraction, 5-workstream audit, and verification pass. | Hosted PR review markdown in `/Volumes/Workspace/pr-reviews/` |
+| `engineering-review` | Pre-merge engineering review for any PR type — breaking changes, regressions, code quality, WP patterns, performance, backwards compat. Re-callable to check which findings are fixed. | `openspec/changes/<branch>/ENGINEERING-REVIEW.md` |
+| `skill-creator` | Design and create new reusable Claude Code skills with correct frontmatter, structure, and registration. | `agent-skills/<name>/SKILL.md` |
 
 ## Repository layout
 
