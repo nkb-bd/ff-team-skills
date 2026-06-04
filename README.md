@@ -1,8 +1,8 @@
-# agent-skills
+# ff-team-skills
 
-Personal Claude Code skill library — orchestrator workflows, review gates, and WordPress-plugin engineering patterns.
+FF team Claude Code skill library — orchestrator workflows, review gates, and WordPress-plugin engineering patterns.
 
-**📖 [Skill Guide (GitHub Pages)](https://nkb-bd.github.io/agent-skills/)** — illustrated guide to every skill, when to use it, and how they chain.
+**📖 [Skill Guide (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — illustrated guide to every skill, when to use it, and how they chain.
 **🗺 [new-feature illustrated manual](new-feature/README.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
 ## Active skills
@@ -86,7 +86,7 @@ Personal Claude Code skill library — orchestrator workflows, review gates, and
 ## Repository layout
 
 ```text
-agent-skills/
+ff-team-skills/
 ├── <skill-name>/            SKILL.md (+ agents/, references/ when applicable)
 ├── new-feature/             SKILL.md + AUDIT.md + README.html (illustrated manual)
 ├── docs/                    GitHub Pages skill guide (index.html)
@@ -105,7 +105,7 @@ All skill directories are self-contained real copies (former matt-skills symlink
 This repo **is** the live skills directory on the primary machine:
 
 ```text
-~/.claude/skills → ~/.agents/skills → /Volumes/Projects/Tools/agent-skills
+~/.claude/skills → ~/.agents/skills → /Volumes/Projects/Tools/ff-team-skills
 ```
 
 On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`) to the clone. Skills in `_inactive/` and `_archived/` don't register; everything at root does.
