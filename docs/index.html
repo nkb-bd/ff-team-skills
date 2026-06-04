@@ -93,6 +93,42 @@ p { margin-bottom: 18px; }
 .skill { margin: 0 0 44px; }
 .skill h3 { font-family: var(--mono); font-weight: 500; font-size: 17px; color: var(--ink); margin-bottom: 10px; }
 .skill h3::before { content: '$'; color: var(--ink3); margin-right: 2px; }
+.skill h3 .src { font-family: var(--sans); font-size: 12px; font-weight: 400; margin-left: 12px; vertical-align: 2px; }
+.skill h3 .src.read { cursor: pointer; }
+
+/* ---- skill reader overlay ---- */
+.reader { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.reader[hidden] { display: none; }
+.reader-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; border-bottom: 1px solid var(--hair); flex-shrink: 0;
+  font-family: var(--sans); font-size: 14px;
+}
+.reader-bar .rt { font-family: var(--mono); font-size: 13px; color: var(--ink2); }
+.reader-bar .ra { display: flex; gap: 18px; align-items: center; }
+.reader-bar button {
+  font-family: var(--sans); font-size: 13px; border: 1px solid var(--hair); background: var(--bg2);
+  color: var(--ink); padding: 5px 14px; border-radius: 6px; cursor: pointer;
+}
+.reader-scroll { overflow-y: auto; flex: 1; }
+.reader-md { max-width: 680px; margin: 0 auto; padding: 48px 28px 120px; }
+.reader-md h1 { font-family: var(--sans); font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; margin: 0 0 20px; }
+.reader-md h2 { font-family: var(--sans); font-size: 21px; font-weight: 650; margin: 44px 0 14px; padding-top: 20px; border-top: 1px solid var(--hair); }
+.reader-md h3 { font-family: var(--sans); font-size: 17px; font-weight: 600; margin: 30px 0 10px; }
+.reader-md h4 { font-family: var(--sans); font-size: 15px; font-weight: 600; margin: 22px 0 8px; }
+.reader-md p, .reader-md li { font-size: 15.5px; line-height: 1.75; }
+.reader-md p { margin-bottom: 16px; }
+.reader-md ul, .reader-md ol { padding-left: 26px; margin-bottom: 16px; }
+.reader-md li { margin-bottom: 6px; }
+.reader-md pre { margin: 18px 0; }
+.reader-md blockquote { border-left: 2px solid var(--accent); padding-left: 18px; color: var(--ink2); margin: 18px 0; }
+.reader-md table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14px; }
+.reader-md th, .reader-md td { border: 1px solid var(--hair); padding: 8px 12px; text-align: left; vertical-align: top; }
+.reader-md th { background: var(--bg2); font-family: var(--sans); font-size: 12.5px; }
+.reader-md details { margin-bottom: 24px; border: 1px solid var(--hair); border-radius: 8px; padding: 10px 16px; }
+.reader-md details summary { font-family: var(--sans); font-size: 13px; color: var(--ink2); cursor: pointer; }
+.reader-md hr { border: 0; border-top: 1px solid var(--hair); margin: 28px 0; }
+.reader-md .err { color: var(--ink2); font-style: italic; }
 .skill .what { margin-bottom: 12px; }
 .skill .row { display: grid; grid-template-columns: 64px 1fr; gap: 14px; font-size: 14.5px; margin-bottom: 7px; }
 .skill .lbl { font-family: var(--sans); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); padding-top: 3px; }
@@ -360,6 +396,18 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
 </main>
 </div>
 
+<div class="reader" id="reader" hidden>
+  <div class="reader-bar">
+    <span class="rt" id="reader-title"></span>
+    <span class="ra">
+      <a id="reader-gh" href="#" target="_blank" rel="noopener">GitHub ↗</a>
+      <button id="reader-close">Close · esc</button>
+    </span>
+  </div>
+  <div class="reader-scroll" id="reader-scroll"><article class="reader-md" id="reader-md"></article></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 <script>
 const html = document.documentElement;
 function wire(ctlId, attr) {
@@ -387,6 +435,63 @@ const spy = new IntersectionObserver(es => {
   }});
 }, { rootMargin: '-20% 0px -70% 0px' });
 targets.forEach(t => spy.observe(t));
+
+const RAW = 'https://raw.githubusercontent.com/nkb-bd/agent-skills/main';
+const BLOB = 'https://github.com/nkb-bd/agent-skills/blob/main';
+const reader = document.getElementById('reader');
+const readerMd = document.getElementById('reader-md');
+const readerTitle = document.getElementById('reader-title');
+const readerGh = document.getElementById('reader-gh');
+const mdCache = {};
+
+async function openReader(id) {
+  reader.hidden = false;
+  document.body.style.overflow = 'hidden';
+  document.getElementById('reader-scroll').scrollTop = 0;
+  readerTitle.textContent = `${id}/SKILL.md`;
+  readerGh.href = `${BLOB}/${id}/SKILL.md`;
+  readerMd.innerHTML = '<p class="err">Loading…</p>';
+  try {
+    if (!mdCache[id]) {
+      const res = await fetch(`${RAW}/${id}/SKILL.md`);
+      if (!res.ok) throw new Error(res.status);
+      mdCache[id] = await res.text();
+    }
+    let md = mdCache[id], fm = '';
+    if (md.startsWith('---')) {
+      const end = md.indexOf('\n---', 3);
+      if (end > 0) { fm = md.slice(4, end).trim(); md = md.slice(end + 4); }
+    }
+    const fmBlock = fm
+      ? `<details><summary>frontmatter — name, triggers, allowed tools</summary><pre><code>${fm.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</code></pre></details>`
+      : '';
+    readerMd.innerHTML = fmBlock + marked.parse(md);
+  } catch (e) {
+    readerMd.innerHTML = `<p class="err">Couldn't load the skill content (${e.message}). Read it on <a href="${BLOB}/${id}/SKILL.md">GitHub</a> instead.</p>`;
+  }
+}
+function closeReader() {
+  reader.hidden = true;
+  document.body.style.overflow = '';
+  if (location.hash.startsWith('#read/')) history.pushState('', '', location.pathname);
+}
+document.getElementById('reader-close').addEventListener('click', closeReader);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !reader.hidden) closeReader(); });
+
+document.querySelectorAll('.skill').forEach(s => {
+  const read = document.createElement('a');
+  read.className = 'src read';
+  read.textContent = 'Read full skill';
+  read.href = `#read/${s.id}`;
+  read.addEventListener('click', e => { e.preventDefault(); history.pushState('', '', `#read/${s.id}`); openReader(s.id); });
+  s.querySelector('h3').appendChild(read);
+});
+
+if (location.hash.startsWith('#read/')) openReader(location.hash.slice(6));
+window.addEventListener('popstate', () => {
+  if (location.hash.startsWith('#read/')) openReader(location.hash.slice(6));
+  else if (!reader.hidden) closeReader();
+});
 </script>
 </body>
 </html>
