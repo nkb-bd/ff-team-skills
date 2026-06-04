@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>/new-feature — Orchestrator Skill Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #060d0a;
+  --panel: #0a1410;
+  --panel2: #0d1a14;
+  --line: #16382a;
+  --line-soft: #102619;
+  --phosphor: #46e890;
+  --phosphor-dim: #2a9c5f;
+  --phosphor-faint: #1a5c3a;
+  --amber: #f5b942;
+  --amber-dim: #8a6a28;
+  --red: #f56a6a;
+  --cyan: #5ad7e8;
+  --violet: #b18af8;
+  --text: #c9e8d6;
+  --text-dim: #7da890;
+  --text-faint: #4a7058;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Bricolage Grotesque', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.14) 2px 4px),
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(70,232,144,.05), transparent 60%);
+  pointer-events: none;
+  z-index: 9999;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: .25;
+  pointer-events: none;
+  z-index: 0;
+}
+.wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 32px 120px; }
+
+/* ---------- header ---------- */
+header { padding: 72px 0 48px; border-bottom: 1px dashed var(--line); position: relative; }
+.sys-line {
+  display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint);
+  margin-bottom: 34px;
+}
+.sys-line .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--phosphor); box-shadow: 0 0 10px var(--phosphor); animation: pulse 2.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(44px, 7vw, 84px);
+  line-height: .98;
+  letter-spacing: -.02em;
+  color: #eafff2;
+}
+h1 .slash { color: var(--phosphor); text-shadow: 0 0 24px rgba(70,232,144,.55); }
+h1 small { display: block; font-weight: 300; font-size: clamp(18px, 2.4vw, 26px); color: var(--text-dim); margin-top: 14px; letter-spacing: 0; }
+.header-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+.chip {
+  font-size: 12px; padding: 6px 14px; border: 1px solid var(--line);
+  border-radius: 3px; color: var(--text-dim); background: var(--panel);
+}
+.chip b { color: var(--phosphor); font-weight: 600; }
+.invoke-box {
+  margin-top: 36px; display: inline-block;
+  background: var(--panel); border: 1px solid var(--phosphor-faint); border-radius: 4px;
+  padding: 14px 22px; font-size: 15px;
+  box-shadow: 0 0 0 1px rgba(70,232,144,.06), inset 0 0 40px rgba(70,232,144,.03);
+}
+.invoke-box .prompt { color: var(--phosphor-dim); }
+.invoke-box .cmd { color: #eafff2; }
+.invoke-box .cursor { display: inline-block; width: 9px; height: 18px; background: var(--phosphor); vertical-align: -3px; margin-left: 6px; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0 } }
+
+/* ---------- section scaffolding ---------- */
+section { padding-top: 84px; }
+.sec-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 14px; }
+.sec-num {
+  font-size: 12px; color: var(--phosphor); border: 1px solid var(--phosphor-faint);
+  padding: 3px 10px; border-radius: 2px; letter-spacing: .2em;
+}
+h2 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 3.4vw, 40px); color: #eafff2; letter-spacing: -.01em; }
+.sec-sub { color: var(--text-dim); max-width: 720px; margin-bottom: 44px; font-size: 14px; }
+.sec-sub code, p code, li code, td code { color: var(--cyan); font-size: .92em; }
+
+/* reveal */
+.rv { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+.rv.on { opacity: 1; transform: none; }
+
+/* ---------- pipeline rail ---------- */
+.rail { position: relative; margin-left: 10px; }
+.rail::before {
+  content: ''; position: absolute; left: 27px; top: 18px; bottom: 18px; width: 2px;
+  background: linear-gradient(var(--phosphor-faint), var(--phosphor-dim) 50%, var(--phosphor-faint));
+  box-shadow: 0 0 14px rgba(70,232,144,.25);
+}
+.station { position: relative; padding: 0 0 22px 84px; }
+.station .node {
+  position: absolute; left: 13px; top: 4px; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--phosphor);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--phosphor);
+  box-shadow: 0 0 16px rgba(70,232,144,.35);
+  z-index: 1;
+}
+.station-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+  padding: 20px 24px; transition: border-color .25s, box-shadow .25s;
+}
+.station-card:hover { border-color: var(--phosphor-faint); box-shadow: 0 0 28px rgba(70,232,144,.07); }
+.station-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.station-top h3 { font-family: var(--display); font-weight: 700; font-size: 21px; color: #eafff2; }
+.tag {
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 2px; border: 1px solid;
+}
+.tag.always { color: var(--phosphor); border-color: var(--phosphor-faint); background: rgba(70,232,144,.06); }
+.tag.tiered { color: var(--cyan); border-color: rgba(90,215,232,.3); background: rgba(90,215,232,.05); }
+.tag.skill-tag { color: var(--violet); border-color: rgba(177,138,248,.35); background: rgba(177,138,248,.06); }
+.station-card p { color: var(--text-dim); font-size: 13.5px; }
+.station-card .calls { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.calls .call {
+  font-size: 12px; color: var(--violet); border: 1px dashed rgba(177,138,248,.4);
+  padding: 3px 10px; border-radius: 3px; background: rgba(177,138,248,.04);
+}
+.calls .call.opt { opacity: .6; }
+.gate {
+  position: relative; margin: 0 0 22px 84px;
+  border: 1px solid var(--amber-dim); border-radius: 4px;
+  background: linear-gradient(90deg, rgba(245,185,66,.08), rgba(245,185,66,.02));
+  padding: 12px 18px; font-size: 13px; color: var(--amber);
+  display: flex; gap: 12px; align-items: center;
+}
+.gate::before {
+  content: ''; position: absolute; left: -63px; top: 50%; transform: translateY(-50%) rotate(45deg);
+  width: 14px; height: 14px; background: var(--ink); border: 2px solid var(--amber);
+  box-shadow: 0 0 12px rgba(245,185,66,.45); z-index: 1;
+}
+.gate b { font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; border: 1px solid var(--amber-dim); padding: 2px 8px; border-radius: 2px; white-space: nowrap; }
+.gate.consent { border-color: rgba(245,106,106,.5); background: linear-gradient(90deg, rgba(245,106,106,.08), rgba(245,106,106,.02)); color: var(--red); }
+.gate.consent::before { border-color: var(--red); box-shadow: 0 0 12px rgba(245,106,106,.4); }
+.gate.consent b { border-color: rgba(245,106,106,.5); }
+
+/* ---------- tier matrix ---------- */
+.matrix { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; }
+th, td { padding: 13px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+thead th {
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint);
+  border-bottom: 1px solid var(--line); font-weight: 500;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background .2s; }
+tbody tr:hover { background: rgba(70,232,144,.03); }
+td.tier-name { font-family: var(--display); font-weight: 700; font-size: 15px; }
+.t-trivial { color: var(--text-faint); }
+.t-small { color: var(--cyan); }
+.t-medium { color: var(--phosphor); }
+.t-large { color: var(--amber); }
+.t-breaking { color: var(--red); }
+td.signal { color: var(--text-dim); font-size: 12.5px; max-width: 230px; }
+.cell { text-align: center !important; }
+.pip { display: inline-block; width: 14px; height: 14px; border-radius: 50%; }
+.pip.on { background: var(--phosphor); box-shadow: 0 0 9px rgba(70,232,144,.5); }
+.pip.lt { background: transparent; border: 2px solid var(--cyan); box-shadow: 0 0 7px rgba(90,215,232,.3); }
+.pip.dp { background: var(--amber); box-shadow: 0 0 9px rgba(245,185,66,.5); }
+.pip.op { background: transparent; border: 2px dashed var(--text-faint); }
+.pip.off { background: transparent; border: 1px solid var(--line); opacity: .5; }
+.legend { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 16px; font-size: 12px; color: var(--text-dim); }
+.legend span { display: flex; align-items: center; gap: 8px; }
+.note-veto {
+  margin-top: 22px; border-left: 3px solid var(--amber); background: rgba(245,185,66,.05);
+  padding: 14px 18px; font-size: 13px; color: var(--text-dim); border-radius: 0 4px 4px 0;
+}
+.note-veto b { color: var(--amber); }
+
+/* ---------- call graph ---------- */
+.graph { display: grid; grid-template-columns: 240px 1fr; gap: 0; align-items: stretch; }
+.hub {
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
+  border: 2px solid var(--phosphor); border-radius: 8px; background: var(--panel);
+  padding: 30px 18px; position: relative;
+  box-shadow: 0 0 40px rgba(70,232,144,.12), inset 0 0 30px rgba(70,232,144,.04);
+}
+.hub .hub-name { font-family: var(--display); font-weight: 800; font-size: 24px; color: #eafff2; }
+.hub .hub-name span { color: var(--phosphor); }
+.hub .hub-role { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint); }
+.spokes { display: flex; flex-direction: column; gap: 14px; padding-left: 46px; position: relative; }
+.spokes::before { content: ''; position: absolute; left: 0; top: 50%; width: 46px; height: 2px; background: var(--phosphor-faint); }
+.spoke-row { position: relative; display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: stretch; }
+.spoke-row::before { content: ''; position: absolute; left: -46px; top: 50%; width: 32px; height: 2px; background: var(--line); }
+.spoke-phase {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim);
+  border: 1px solid var(--line); border-radius: 4px; background: var(--panel2); padding: 10px 8px;
+}
+.spoke-skills { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.sk {
+  border: 1px solid rgba(177,138,248,.4); color: var(--violet); background: rgba(177,138,248,.05);
+  border-radius: 4px; padding: 8px 14px; font-size: 13px; transition: all .2s; cursor: default;
+}
+.sk:hover { background: rgba(177,138,248,.12); box-shadow: 0 0 18px rgba(177,138,248,.18); transform: translateY(-2px); }
+.sk em { display: block; font-style: normal; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+.sk.cli { border-color: rgba(90,215,232,.4); color: var(--cyan); background: rgba(90,215,232,.05); }
+.sk.cli:hover { background: rgba(90,215,232,.1); box-shadow: 0 0 18px rgba(90,215,232,.15); }
+.sk.cond { border-style: dashed; opacity: .75; }
+.upstream { margin-top: 44px; border-top: 1px dashed var(--line); padding-top: 28px; }
+.upstream h4 { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--text-dim); margin-bottom: 14px; }
+.upstream .flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.upstream .flow .arr { color: var(--phosphor-dim); }
+.upstream .src { border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; color: var(--text-dim); background: var(--panel); }
+.upstream .dst { border: 1px solid var(--phosphor-faint); border-radius: 4px; padding: 6px 12px; color: var(--phosphor); background: rgba(70,232,144,.05); }
+
+/* ---------- checks board ---------- */
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.check-card { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 24px; }
+.check-card h3 { font-family: var(--display); font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+.check-card .where { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 16px; }
+.check-card.sec h3 { color: var(--red); }
+.check-card.qual h3 { color: var(--phosphor); }
+.check-card.proc h3 { color: var(--cyan); }
+.check-card.consent-card h3 { color: var(--amber); }
+.check-card ul { list-style: none; }
+.check-card li { padding: 7px 0 7px 26px; position: relative; font-size: 13px; color: var(--text-dim); border-bottom: 1px dotted var(--line-soft); }
+.check-card li:last-child { border-bottom: none; }
+.check-card li::before { content: '▣'; position: absolute; left: 0; top: 7px; font-size: 12px; }
+.check-card.sec li::before { color: var(--red); }
+.check-card.qual li::before { color: var(--phosphor); }
+.check-card.proc li::before { color: var(--cyan); }
+.check-card.consent-card li::before { color: var(--amber); }
+.check-card li b { color: var(--text); font-weight: 500; }
+.never {
+  margin-top: 18px; border: 1px solid rgba(245,106,106,.35); border-radius: 4px;
+  background: rgba(245,106,106,.05); padding: 10px 14px; font-size: 12px; color: var(--red);
+}
+.never b { letter-spacing: .1em; text-transform: uppercase; font-size: 10.5px; }
+
+/* ---------- questions timeline ---------- */
+.qline { display: grid; gap: 10px; }
+.q {
+  display: grid; grid-template-columns: 60px 110px 1fr; gap: 18px; align-items: baseline;
+  border: 1px solid var(--line); border-radius: 5px; background: var(--panel);
+  padding: 14px 20px; transition: border-color .2s, transform .2s;
+}
+.q:hover { border-color: var(--phosphor-faint); transform: translateX(6px); }
+.q .qn { font-family: var(--display); font-weight: 800; font-size: 19px; color: var(--phosphor); }
+.q .qp { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+.q .qt { font-size: 13.5px; color: var(--text); }
+.q .qt .why { display: block; color: var(--text-faint); font-size: 12px; margin-top: 3px; }
+.q.is-consent { border-left: 3px solid var(--red); }
+.q.is-gate { border-left: 3px solid var(--amber); }
+.q.is-input { border-left: 3px solid var(--cyan); }
+.qkey { display: flex; gap: 24px; margin-bottom: 20px; font-size: 12px; color: var(--text-dim); flex-wrap: wrap; }
+.qkey i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+
+/* ---------- footer ---------- */
+footer { margin-top: 100px; border-top: 1px dashed var(--line); padding-top: 36px; font-size: 12px; color: var(--text-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+footer code { color: var(--phosphor-dim); }
+
+@media (max-width: 860px) {
+  .graph { grid-template-columns: 1fr; gap: 26px; }
+  .spokes { padding-left: 0; }
+  .spokes::before, .spoke-row::before { display: none; }
+  .spoke-row { grid-template-columns: 1fr; gap: 8px; }
+  .q { grid-template-columns: 46px 1fr; }
+  .q .qp { grid-column: 2; }
+  .q .qt { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="sys-line rv">
+    <span class="dot"></span>
+    <span>ORCHESTRATOR SKILL · ONLINE</span>
+    <span>SKILL.md · 6 PHASES · 6 GATES</span>
+    <span>AUDITED 2026-06-04 · D1–D7 FIXED</span>
+  </div>
+  <h1 class="rv"><span class="slash">/</span>new-feature
+    <small>Composite workflow for shipping a feature in a WPManageNinja-style WordPress plugin — ceremony proportional to risk, consent for outward actions, artifacts as memory.</small>
+  </h1>
+  <div class="header-meta rv">
+    <span class="chip">backend <b>PHP · WPFluent</b></span>
+    <span class="chip">frontend <b>per-repo — read CLAUDE.md</b></span>
+    <span class="chip">base branch <b>dev</b></span>
+    <span class="chip">spec system <b>openspec</b></span>
+  </div>
+  <div class="invoke-box rv">
+    <span class="prompt">❯</span> <span class="cmd">Use $new-feature</span><span class="cursor"></span>
+  </div>
+</header>
+
+<!-- ================= PIPELINE ================= -->
+<section id="pipeline">
+  <div class="sec-head rv"><span class="sec-num">01</span><h2>How it works — the phase rail</h2></div>
+  <p class="sec-sub rv">Seven stations, six stops. Between phases sit <span style="color:var(--amber)">alignment gates</span> (show artifact, wait for "yes") and <span style="color:var(--red)">consent gates</span> (outward-facing actions: push, PR). Gates are where course corrections happen cheaply — a wrong noun costs one sentence at the gate, a rewrite after build.</p>
+
+  <div class="rail">
+    <div class="station rv">
+      <span class="node">0</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Triage</h3><span class="tag always">always</span></div>
+        <p>Start-of-run hygiene: archive any merged openspec changes. Read <code>CLAUDE.md</code> / <code>AGENTS.md</code> (they override skill defaults — stack, hook prefix, commit format). Ask what we're building — an upstream artifact (issue #, PRD, openspec change) <em>or</em> a plain-language description; both are first-class answers. Pick a tier; announce it with reasoning. The tier must survive the evidence — <code>detect_changes</code> on the diff can veto a self-declared "Small".</p>
+      </div>
+    </div>
+    <div class="gate rv"><b>Gate</b> "I picked tier X because Y — agree?" Recalibrate before moving on.</div>
+
+    <div class="station rv">
+      <span class="node">1</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Align</h3><span class="tag tiered">tier ≥ medium · mandatory ≥ large</span></div>
+        <p>Interview until shared vocabulary: the single canonical noun, the problem + who hits it, the smallest valuable version, constraints from <code>CONTEXT.md</code>/ADRs. Updates CONTEXT.md inline as terms resolve. With an upstream issue, this is a confirmation pass — not re-discovery.</p>
+        <div class="calls"><span class="call">$grill-with-docs</span></div>
+      </div>
+    </div>
+    <div class="gate rv"><b>Gate</b> One-sentence problem statement + canonical noun. Wait for "yes".</div>
+
+    <div class="station rv">
+      <span class="node">2</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Plan</h3><span class="tag tiered">tier ≥ medium</span></div>
+        <p>Input: the canonical noun (from the grill, the artifact title, or ask the user — never improvised). Name the change <code>issue-&lt;n&gt;-&lt;noun&gt;</code> for a two-way tracker link. Scaffold with openspec, write <code>proposal.md</code> (why / what changes / capabilities / impact). Tier ≥ Large: generate 3+ radically different interface designs in parallel and pick one.</p>
+        <div class="calls"><span class="call">openspec new change</span><span class="call opt">$design-an-interface (≥ large)</span></div>
+      </div>
+    </div>
+    <div class="gate rv"><b>Gate</b> proposal.md (+ chosen design). Wait for "yes". May batch with Phase 3's gate when solo.</div>
+
+    <div class="station rv">
+      <span class="node">3</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Spec</h3><span class="tag tiered">tier ≥ medium</span></div>
+        <p>WHEN/THEN scenarios in <code>spec.md</code> — every scenario is a future test. <code>design.md</code> records decisions with alternatives + rationale. <code>tasks.md</code> holds checkbox milestones small enough for one session. Must pass <code>openspec validate --strict</code>.</p>
+        <div class="calls"><span class="call">openspec validate --strict</span></div>
+      </div>
+    </div>
+    <div class="gate rv"><b>Gate</b> spec + tasks. Wait for "yes".</div>
+
+    <div class="station rv">
+      <span class="node">4</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Build</h3><span class="tag always">always</span></div>
+        <p>Red-green-refactor per scenario, test at the correct seam. Full WordPress security checklist on every handler (see checks board). Commit per milestone with prefix format. New PHP class → <code>composer dump-autoload</code> + classmap grep. Bug mid-build → reproduce before hypothesising. Architecture itch → defer post-merge, don't refactor the world mid-feature.</p>
+        <div class="calls"><span class="call">$tdd</span><span class="call opt">$simplify (if available)</span><span class="call opt">$bug-fix (if bug surfaces)</span><span class="call opt">$zoom-out (if lost · if available)</span></div>
+      </div>
+    </div>
+    <div class="gate consent rv"><b>Consent</b> Never <code style="color:inherit">git push</code> without explicit consent — once-approved is not forever-approved.</div>
+
+    <div class="station rv">
+      <span class="node">5</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Review</h3><span class="tag always">always · light ≤ medium · deep ≥ large</span></div>
+        <p><b style="color:var(--cyan)">Light:</b> sequential pattern passes only (WP-PHP, JS, Vue, backwards-compat, adversarial inputs). <b style="color:var(--amber)">Deep:</b> seven parallel detectors — accessibility, async races, UI↔backend wiring, permissions, backwards-compat, error-handling UX, performance + data integrity — plus the sequential passes. Re-runnable report; resolved findings marked <code>[cleared]</code>. Every Blocking addressed before push.</p>
+        <div class="calls"><span class="call">$pre-merge-review [light]</span><span class="call opt">detect_changes / get_review_context</span></div>
+      </div>
+    </div>
+    <div class="gate rv"><b>Gate</b> Show the report. Wait for "yes" before pushing.</div>
+
+    <div class="station rv">
+      <span class="node">6</span>
+      <div class="station-card">
+        <div class="station-top"><h3>Ship</h3><span class="tag always">always</span></div>
+        <p>Draft the PR description from the actual git diff; include <code>Closes #&lt;n&gt;</code> / <code>Fixes #&lt;n&gt;</code> so the upstream issue auto-closes on merge. After merge: <code>openspec archive</code> (Phase 0's hygiene check is the backstop if this session is gone by then) and verify the issue closed.</p>
+        <div class="calls"><span class="call">$pr-descriptor</span><span class="call">openspec archive</span></div>
+      </div>
+    </div>
+    <div class="gate consent rv"><b>Consent</b> Show the draft, then ask before <code style="color:inherit">gh pr create</code>. Never automatic, never inherited.</div>
+  </div>
+</section>
+
+<!-- ================= TIERS ================= -->
+<section id="tiers">
+  <div class="sec-head rv"><span class="sec-num">02</span><h2>Tier matrix — what actually runs</h2></div>
+  <p class="sec-sub rv">Phase 0 classifies the request; the tier decides coverage. Each tier <em>adds</em> phases going down — Medium is the first tier that plans, Large the first that grills and specs formally.</p>
+
+  <div class="matrix rv">
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th><th>Signal</th>
+          <th class="cell">P1 Align</th><th class="cell">P2 Plan</th><th class="cell">P3 Spec</th>
+          <th class="cell">P4 Build</th><th class="cell">P5 Review</th><th class="cell">P6 Ship</th>
+          <th class="cell">Extras</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tier-name t-trivial">Trivial</td>
+          <td class="signal">Typo, config tweak, single-line copy</td>
+          <td class="cell" colspan="7" style="color:var(--text-faint); font-size:12px;">— skill exits entirely · just commit —</td>
+        </tr>
+        <tr>
+          <td class="tier-name t-small">Small</td>
+          <td class="signal">Single-file fix, one-component cosmetic change</td>
+          <td class="cell"><span class="pip off"></span></td><td class="cell"><span class="pip off"></span></td><td class="cell"><span class="pip off"></span></td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip lt"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell">—</td>
+        </tr>
+        <tr>
+          <td class="tier-name t-medium">Medium</td>
+          <td class="signal">One Vue panel, one endpoint, bugfix touching ~3 files</td>
+          <td class="cell"><span class="pip op"></span></td><td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip lt"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell">—</td>
+        </tr>
+        <tr>
+          <td class="tier-name t-large">Large</td>
+          <td class="signal">New module / service / policy / capability / data migration</td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip dp"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell" style="font-size:11.5px; color:var(--violet);">design-an-interface</td>
+        </tr>
+        <tr>
+          <td class="tier-name t-breaking">Breaking</td>
+          <td class="signal">API change, schema migration, removed feature</td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell"><span class="pip on"></span></td><td class="cell"><span class="pip dp"></span></td><td class="cell"><span class="pip on"></span></td>
+          <td class="cell" style="font-size:11.5px; color:var(--red);">+ plugin-audit post-merge</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend rv">
+    <span><span class="pip on"></span> runs</span>
+    <span><span class="pip lt"></span> review · light</span>
+    <span><span class="pip dp"></span> review · deep</span>
+    <span><span class="pip op"></span> optional (noun must still be resolved)</span>
+    <span><span class="pip off"></span> skipped</span>
+  </div>
+  <div class="note-veto rv"><b>Evidence veto:</b> the tier must survive the diff. Breaking signals — schema change, removed hook, changed REST signature — escalate the tier even if the request sounded Small. Self-declared tiers don't override what <code>detect_changes</code> says.</div>
+</section>
+
+<!-- ================= CALL GRAPH ================= -->
+<section id="skills">
+  <div class="sec-head rv"><span class="sec-num">03</span><h2>Skill call graph</h2></div>
+  <p class="sec-sub rv">It's an orchestrator, not a detector — every phase delegates to a single-purpose skill or CLI. <span style="color:var(--violet)">Violet</span> = sub-skill, <span style="color:var(--cyan)">cyan</span> = CLI/tool, dashed = conditional.</p>
+
+  <div class="graph rv">
+    <div class="hub">
+      <div class="hub-role">orchestrator</div>
+      <div class="hub-name"><span>/</span>new-feature</div>
+      <div class="hub-role">sequencing + gates</div>
+    </div>
+    <div class="spokes">
+      <div class="spoke-row"><div class="spoke-phase">P1 Align</div><div class="spoke-skills">
+        <span class="sk">$grill-with-docs<em>interview → noun + problem · updates CONTEXT.md</em></span>
+      </div></div>
+      <div class="spoke-row"><div class="spoke-phase">P2 Plan</div><div class="spoke-skills">
+        <span class="sk cli">openspec<em>new change · instructions · validate --strict · archive</em></span>
+        <span class="sk cond">$design-an-interface<em>≥ large · 3+ parallel designs</em></span>
+      </div></div>
+      <div class="spoke-row"><div class="spoke-phase">P4 Build</div><div class="spoke-skills">
+        <span class="sk">$tdd<em>red-green-refactor at the correct seam</em></span>
+        <span class="sk cond">$simplify<em>after green · if available</em></span>
+        <span class="sk cond">$bug-fix<em>if a bug surfaces · reproduce first</em></span>
+        <span class="sk cond">$zoom-out<em>if lost · if available</em></span>
+      </div></div>
+      <div class="spoke-row"><div class="spoke-phase">P5 Review</div><div class="spoke-skills">
+        <span class="sk">$pre-merge-review<em>light ≤ medium · deep ≥ large</em></span>
+        <span class="sk cli cond">code-review-graph<em>detect_changes · get_review_context</em></span>
+      </div></div>
+      <div class="spoke-row"><div class="spoke-phase">P6 Ship</div><div class="spoke-skills">
+        <span class="sk">$pr-descriptor<em>why-first PR text from git evidence</em></span>
+        <span class="sk cli">gh<em>pr create — only with consent</em></span>
+      </div></div>
+      <div class="spoke-row"><div class="spoke-phase">Post-merge</div><div class="spoke-skills">
+        <span class="sk cond">$plugin-audit<em>quarterly · mandatory after breaking</em></span>
+        <span class="sk cond">$improve-codebase-architecture<em>deferred mid-feature refactor itches</em></span>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="upstream rv">
+    <h4>Upstream producers — artifacts Phase 0 reads before the grill</h4>
+    <div class="flow">
+      <span class="src">$qa</span><span class="src">$triage</span><span class="src">$to-prd</span><span class="src">$to-issues</span><span class="src">$request-refactor-plan</span>
+      <span class="arr">──▶</span>
+      <span class="dst">issue # / PRD / tracer-bullet</span>
+      <span class="arr">──▶</span>
+      <span class="dst">grill = confirmation pass · PR gets Closes #n</span>
+    </div>
+    <div class="flow" style="margin-top:12px;">
+      <span class="src">you, in plain words</span>
+      <span class="arr">──▶</span>
+      <span class="dst">"users can't export entries with conditional logic"</span>
+      <span class="arr">──▶</span>
+      <span class="dst">restated back · grill = first-pass discovery</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHECKS ================= -->
+<section id="checks">
+  <div class="sec-head rv"><span class="sec-num">04</span><h2>The checks it runs</h2></div>
+  <p class="sec-sub rv">Four boards: WordPress security on every handler, code-quality on every refactor, process verifications at phase boundaries, and the consent rules that never relax.</p>
+
+  <div class="checks">
+    <div class="check-card sec rv">
+      <h3>WordPress security</h3>
+      <div class="where">Phase 4 · every handler · do not skip</div>
+      <ul>
+        <li>Every <b><code>$_GET/$_POST/$_REQUEST</code></b> sanitized with the right sanitizer + <code>wp_unslash()</code></li>
+        <li>Every output <b>escaped at the point of output</b> — <code>esc_html</code> / <code>esc_attr</code> / <code>esc_url</code> / <code>esc_js</code></li>
+        <li>Every REST route has a <b>policy class or explicit <code>permission_callback</code></b></li>
+        <li>All <code>$wpdb</code> calls with variables use <b><code>prepare()</code></b></li>
+        <li><b>Nonce verified before capability check</b> on every AJAX/REST handler</li>
+        <li><b><code>current_user_can()</code></b> on every data-modifying endpoint</li>
+        <li>Hook names use the <b>plugin prefix</b>; filters/actions exposed at meaningful seams for pro addons</li>
+      </ul>
+      <div class="never"><b>Never</b> &nbsp;<code style="color:inherit">permission_callback =&gt; '__return_true'</code></div>
+    </div>
+
+    <div class="check-card qual rv">
+      <h3>Code quality</h3>
+      <div class="where">Phase 4 · refactor step · after green only</div>
+      <ul>
+        <li><b>Boring, obvious code first</b> — three similar lines beat a premature abstraction</li>
+        <li>Short functions, intention-revealing names; no helper layers that exist to be helpers</li>
+        <li><b>No comments restating code</b> — only the non-obvious why (hidden constraint, invariant, workaround)</li>
+        <li>Match the surrounding style — existing patterns before inventing new ones</li>
+        <li><b>No half-done implementations</b> or flags for code not yet written</li>
+        <li>Vue style follows the target repo — FluentForm = Vue 2 Options API, FluentPlayer = Vue 3 <code>&lt;script setup&gt;</code></li>
+      </ul>
+    </div>
+
+    <div class="check-card proc rv">
+      <h3>Process verifications</h3>
+      <div class="where">Phase boundaries · mechanical, not vibes</div>
+      <ul>
+        <li><b>P0:</b> archive-hygiene sweep of <code>openspec/changes/</code> for already-merged work</li>
+        <li><b>P0:</b> tier vs. evidence — <code>detect_changes</code> risk score can escalate the tier</li>
+        <li><b>P3:</b> <code>openspec validate --strict</code> must pass before the gate</li>
+        <li><b>P4:</b> new PHP class → <code>composer dump-autoload</code>, then grep <code>autoload_classmap.php</code> — classmap-authoritative builds hide new classes</li>
+        <li><b>P5:</b> every <b>Blocking</b> finding addressed before push; re-run marks fixes <code>[cleared]</code></li>
+        <li><b>P6:</b> PR carries <code>Closes #n</code> / <code>Fixes #n</code>; verify auto-close after merge</li>
+      </ul>
+    </div>
+
+    <div class="check-card consent-card rv">
+      <h3>Consent rules</h3>
+      <div class="where">Outward-facing actions · stated at both sites</div>
+      <ul>
+        <li><b>Local commits flow freely</b> — one per milestone, prefix format, no attribution trailers</li>
+        <li><b><code>git push</code> requires explicit consent, every time</b></li>
+        <li><b><code>gh pr create</code> requires explicit consent, every time</b> — draft shown first</li>
+        <li>Gate batching allowed only for P2+P3 when solo; <b>alignment, pre-push and PR gates always stand alone</b></li>
+      </ul>
+      <div class="never"><b>Rule</b> &nbsp;Once-approved is not forever-approved.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUESTIONS ================= -->
+<section id="questions">
+  <div class="sec-head rv"><span class="sec-num">05</span><h2>Every question it asks you</h2></div>
+  <p class="sec-sub rv">Two species: alignment gates freeze decisions while they're still one paragraph; consent asks guard outward-facing actions. It never asks permission for reversible, in-workspace work.</p>
+
+  <div class="qkey rv">
+    <span><i style="background:var(--cyan)"></i>input</span>
+    <span><i style="background:var(--amber)"></i>alignment gate</span>
+    <span><i style="background:var(--red)"></i>consent</span>
+  </div>
+
+  <div class="qline">
+    <div class="q is-input rv"><span class="qn">Q1</span><span class="qp">Phase 0</span><span class="qt">"What are we working on? An issue #, PRD, or openspec change is great — or just describe the feature or bug in your own words."<span class="why">Artifact → grill becomes confirmation, issue # feeds Closes #n. Plain description → restated back in one sentence, Phase 1 does first-pass discovery. Sounds like a bug → offers $bug-fix instead. Never bounces you to go file an issue first.</span></span></div>
+    <div class="q is-gate rv"><span class="qn">Q2</span><span class="qp">Phase 0</span><span class="qt">"I picked tier X because Y — agree?"<span class="why">Tier decides coverage; user vetoes before work starts. Diff evidence can still escalate it.</span></span></div>
+    <div class="q is-input rv"><span class="qn">Q3</span><span class="qp">Phase 1</span><span class="qt">The grill: canonical noun? problem + who hits it? smallest valuable version? constraining terms?<span class="why">Shared vocabulary — the communication gap caught here costs 10× to fix later.</span></span></div>
+    <div class="q is-gate rv"><span class="qn">Q4</span><span class="qp">Phase 1</span><span class="qt">"Problem statement + canonical noun — yes?"<span class="why">The noun propagates into the change name, spec, class names, and PR. Cheapest fix point.</span></span></div>
+    <div class="q is-gate rv"><span class="qn">Q5</span><span class="qp">Phase 2</span><span class="qt">"proposal.md — yes?" (+ "which interface design?" at Large)<span class="why">Approving one page is cheap; a wrong API shape discovered at review is not.</span></span></div>
+    <div class="q is-gate rv"><span class="qn">Q6</span><span class="qp">Phase 3</span><span class="qt">"spec + tasks — yes?" (may batch with Q5 when solo)<span class="why">WHEN/THEN scenarios are the contract TDD builds against.</span></span></div>
+    <div class="q is-consent rv"><span class="qn">Q7</span><span class="qp">Phase 4</span><span class="qt">"May I push?" — asked per push<span class="why">Outward-facing: CI, teammates. Once-approved is not forever-approved.</span></span></div>
+    <div class="q is-gate rv"><span class="qn">Q8</span><span class="qp">Phase 5</span><span class="qt">"Here's the review report — yes, before I push?"<span class="why">Every Blocking addressed pre-push; user judges the rest.</span></span></div>
+    <div class="q is-consent rv"><span class="qn">Q9</span><span class="qp">Phase 6</span><span class="qt">"Here's the PR draft — may I run gh pr create?"<span class="why">Publishing. Never automatic, never inherited from earlier approvals.</span></span></div>
+  </div>
+</section>
+
+<footer>
+  <span>SKILL: <code>~/.claude/skills/new-feature/SKILL.md</code> · AUDIT: <code>AUDIT.md</code></span>
+  <span>stack-agnostic phase structure — only the Phase 4 checklist is WordPress-specific</span>
+</footer>
+
+</div>
+<script>
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); }
+}), { threshold: .12 });
+document.querySelectorAll('.rv').forEach((el, i) => {
+  el.style.transitionDelay = (i % 6) * 60 + 'ms';
+  io.observe(el);
+});
+</script>
+</body>
+</html>

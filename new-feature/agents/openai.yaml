@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Feature Workflow"
+  short_description: "End-to-end composite: align → plan → spec → build → review → ship"
+  default_prompt: "Use $new-feature to build a new feature with the full workflow (grill-with-docs → openspec → design-an-interface → tdd → pre-merge-review → pr-descriptor → openspec archive). Pick the right intensity tier based on feature size."
