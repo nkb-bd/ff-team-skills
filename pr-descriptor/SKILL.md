@@ -19,10 +19,9 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 
 ## Execution Workflow
 
-1. Resolve the PR template path in this order:
-   - `.claude/pr-template.md` (in-repo copy — works for every teammate's agent, no default-branch dependency)
-   - `.github/pull_request_template.md` / `.github/PULL_REQUEST_TEMPLATE.md`
-   - `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md` (canonical source, role-dev-lead.md §9–§11; this path exists only on this machine — offer to copy it to the repo's `.claude/pr-template.md` when missing)
+1. Resolve the PR template:
+   - `references/pull_request_template.md` (in this skill's directory) — the single source of truth. The template travels with the skill, so any machine carrying the skill carries the template.
+   - If a repo carries its own `.github/pull_request_template.md`, honor it for section layout but still apply the gate fill rules below.
 2. Determine base branch.
    - Prefer upstream merge target if it maps to `development`, `master`, or `main`.
    - Otherwise evaluate candidates in this order:
@@ -74,11 +73,11 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 - Check a box only with evidence: tests ran (paste-worthy result), PHPCS/PHPStan output, diff grep for debug code/secrets, changelog diff, etc.
 - Inapplicable items: annotate `N/A — reason` inline.
 - Unverifiable items: leave unchecked with a one-line note on what is missing.
-- Any gate bypass (`--no-verify`, new `@phpstan-ignore`/`phpcs:disable`) requires a written reason in `Anything the reviewer should know?` (§8.9).
+- Any gate bypass (`--no-verify`, new `@phpstan-ignore`/`phpcs:disable`) requires a written reason in `Anything the reviewer should know?`.
 
 ### Changes & review routing
 
-- Tick area boxes (PHP, JS/Vue, Tests, Build/config) from the diff's file types — every area the diff actually touches, no more.
+- Tick area boxes (PHP, JS/Vue, Tests, Build/config, Docs) from the diff's file types — every area the diff actually touches, no more.
 - Tick ⚠ routing categories from diff evidence:
   - auth, payments, uploads, data handling → Security-touching
   - migrations, tables, columns, indexes → Database schema change
@@ -90,7 +89,7 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 ### Anything the reviewer should know?
 
 - Include risks, trade-offs, migrations, rollout notes, known limits, and written reasons for any gate bypass.
-- Bot `REQUEST CHANGES` override notes are written here by the Dev Lead only (§9); never pre-fill one.
+- Bot `REQUEST CHANGES` override notes are written here by the Dev Lead only; never pre-fill one.
 - Omit content (leave section minimal) when there is nothing material to flag.
 
 ## Concision Rules
@@ -112,5 +111,5 @@ Verify before final output:
 
 ## References
 
-- Template (single source of truth): `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md`
-- Source policy: `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pr-review-policy.md`, `role-dev-lead.md` §9–§11
+- Template (single source of truth, ships with the skill): `references/pull_request_template.md`
+- Skill home: https://github.com/nkb-bd/agent-skills (`pr-descriptor/`)
