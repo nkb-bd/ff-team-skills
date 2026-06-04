@@ -1,0 +1,329 @@
+---
+name: pr-reviewer
+description: >
+  Pre-merge multi-detector PR review for WordPress plugins (PHP + Vue + JSX + JS).
+  Fans out 6 specialised detector passes (a11y, async-state, traceability, RBAC alignment,
+  backward-compat, error-state) over a branch diff, aggregates findings, dedupes on
+  (file, line, category), and writes an autharif-shaped report (per-line inline findings
+  with bold lead-ins + summary review with severity tally). Re-runnable on the same branch
+  to clear resolved findings.
+when_to_use: >
+  Before pushing a branch. After implementing a feature. When asked "review this PR",
+  "give me a pre-merge gate", "run the orchestrator", "deep review", "find what autharif would catch".
+context: fork
+allowed-tools: Read Bash(git *) Bash(grep *) Bash(find *) Bash(rg *)
+effort: high
+---
+
+# PR Reviewer (Multi-Detector Orchestrator)
+
+This skill is the local pre-merge equivalent of the WPManageNinja AI-assisted reviewer
+on GitHub. It catches the recurring categories that `engineering-review`'s monolithic
+pass misses: accessibility, async state machine correctness, end-to-end UI↔backend
+traceability inside one PR, RBAC alignment between UI gates and policy classes,
+backward-compat regressions, and error-state UX.
+
+If you only need the lightweight pre-merge sanity sweep, use `engineering-review`.
+This skill is the heavy gate — six parallel detectors, slower, deeper.
+
+## Live branch context
+
+- **Diff stat:** !`git diff origin/dev...HEAD --stat 2>/dev/null || git diff HEAD~1...HEAD --stat`
+- **Commits:** !`git log origin/dev...HEAD --oneline 2>/dev/null || git log HEAD~3..HEAD --oneline`
+- **Changed files:** !`git diff origin/dev...HEAD --name-only 2>/dev/null || git diff HEAD~1..HEAD --name-only`
+
+---
+
+## Two modes
+
+**First run** — no existing report at the output path: run all applicable detectors and write findings.
+
+**Re-run** — report exists for this branch: read it, re-check every OPEN finding only,
+mark resolved findings as `[cleared]`, archive the prior report as
+`<branch>-<short-sha>.md` in the same directory, and report counts.
+
+## Output path
+
+Primary: `/Volumes/Workspace/pr-reviews/<repo>/<branch-slug>.md`
+
+Fallback (when `/Volumes/Workspace` is not mounted): `<repo-root>/.review/<branch-slug>.md`
+
+Choose the fallback automatically if the primary path's parent directory does not exist.
+Do not create `/Volumes/Workspace/pr-reviews/` if it is missing — that signals the
+machine is not configured for hosted reviews and the fallback is correct.
+
+---
+
+## Step 0a — Build the feedback loop FIRST
+
+(Borrowed from matt-pocock's `diagnose` skill: no amount of detector-tuning helps
+without a fast pass/fail signal.)
+
+Before running detectors against a real branch for the first time after a criteria
+pack edit, run the validation harness:
+
+```bash
+bash /Volumes/Projects/Tools/agent-skills/shared/scripts/audit-autharif.sh \
+  --corpus /Volumes/Projects/Tools/agent-skills/pr-reviewer/references/test-corpus.tsv \
+  --validate
+```
+
+This feeds the canonical 30-row corpus through the detector category map and
+confirms each headline lands in the expected detector. ≥80% accuracy required to
+proceed. If validation fails, the criteria packs are out of sync with reality —
+fix them before invoking pr-reviewer on any real PR.
+
+For routine pre-merge runs (criteria packs unchanged since last validation), skip
+this step.
+
+## Step 0b — Project glossary awareness
+
+(Borrowed from matt-pocock's `grill-with-docs` skill.)
+
+If a `CONTEXT.md` or `CONTEXT-MAP.md` exists at the repo root, read it once before
+any detector fans out. Findings should use **project vocabulary** in headlines,
+not generic best-practice labels. If the project glossary defines `PmproImport`
+as the migration flow and the bug is in that flow, the headline says
+"PmproImport retry resumes from stale offset" — not "async function lacks
+re-entry guard."
+
+This matters because reviewers reading both autharif's GitHub comments and
+pr-reviewer's local report should not feel like they're reading two different
+codebases. Autharif uses project terms (`PMPro`, `MCP`, `BlockComposer`,
+`AiPolicy`) and pr-reviewer must too.
+
+## Step 0c — Decide which detectors to run
+
+Read the diff. Map changed-file extensions to detectors:
+
+| Extension | Detectors that run |
+|---|---|
+| `.vue` | `a11y`, `async-state`, `error-state`, `traceability`, `bc-regression` |
+| `.jsx` / `.tsx` | `a11y`, `async-state`, `error-state`, `traceability`, `bc-regression` |
+| `.js` / `.ts` | `async-state`, `error-state`, `traceability`, `bc-regression` |
+| `.php` (Controllers, Policies) | `rbac-alignment`, `traceability`, `bc-regression`, `perf-and-integrity` |
+| `.php` (Views, Services, Models) | `traceability`, `bc-regression`, `perf-and-integrity` |
+| `.scss` / `.css` | `a11y` (focus-visible / outline removal only) |
+| `migrations/*` | `bc-regression`, `perf-and-integrity` |
+
+The six detectors in this skill correspond to six reference packs in `references/`.
+A seventh sub-pack `perf-and-integrity-criteria.md` covers performance and data
+integrity — combined because the autharif corpus shows they co-occur on the same
+files (controllers, services, migrations) at high rates.
+
+Always run `traceability` and `bc-regression` regardless of file types — they are
+PR-shape checks, not file-type checks.
+
+---
+
+## Step 1 — Fan out the detectors
+
+If the runtime can spawn sub-agents (Claude Code Agent tool, Codex sub-agents),
+spawn one sub-agent per detector in **parallel**. Each sub-agent receives:
+
+```yaml
+detector: <detector-name>             # one of: a11y, async-state, traceability, rbac-alignment, bc-regression, error-state, perf-and-integrity
+diff_path: <abs path to git diff file or "use git">
+changed_files: <list of file paths from the diff>
+repo_root: <abs path to repo>
+criteria_ref: references/<detector>-criteria.md
+output_format: ndjson                 # one finding per line, schema below
+max_findings: 50                      # cap per detector to prevent runaway
+```
+
+The sub-agent reads its criteria reference, walks every changed file relevant to
+its category, and emits **NDJSON to stdout** — one finding per line. No prose,
+no narrative — only findings.
+
+If sub-agents are not available, emulate this as **six sequential passes** in this
+skill's outer agent. Do not skip detectors when running sequentially; just run them
+in series and concatenate the NDJSON.
+
+---
+
+## Step 2 — Canonical finding schema
+
+Every finding from every detector MUST be a JSON object with exactly these fields:
+
+```json
+{
+  "category": "a11y",
+  "severity": "Blocking",
+  "file": "resources/admin/Modules/Settings/Migration/Pmpro/_PmproProgress.vue",
+  "line": 41,
+  "headline": "Retry can start concurrent import loops",
+  "evidence": "retryImport() called from button handler without checking if importInFlight === true",
+  "impact": "Two concurrent import loops mutate state in parallel; progress UI double-counts and import can corrupt data.",
+  "recommended_fix": "Guard retryImport() with `if (this.importInFlight) return;` and await prior loop's completion before resuming.",
+  "detectors": ["async-state"]
+}
+```
+
+**Required fields:** `category`, `severity`, `file`, `headline`, `evidence`, `impact`, `recommended_fix`, `detectors`.
+
+**Optional:** `line` (omit for whole-file findings).
+
+**Severity tiers:** `Blocking | High | Medium | Suggestion` — same vocabulary autharif uses.
+
+**Category vocabulary** (closed set):
+`a11y`, `async-state`, `traceability`, `rbac-alignment`, `bc-regression`, `error-state`,
+`security`, `data-integrity`, `perf`, `ui-logic`.
+
+A finding missing any required field MUST be dropped by the orchestrator with a
+tagged stderr log (matt-pocock's `diagnose` convention — every log line gets a
+unique prefix so cleanup is one `grep -v`):
+
+| Tag | Used when |
+|---|---|
+| `[pr-reviewer:detector]` | Detector start / completion / count |
+| `[pr-reviewer:drop]` | Finding rejected (malformed, over cap, out-of-vocabulary) |
+| `[pr-reviewer:dedup]` | Two findings merged on `(file, line, category)` |
+| `[pr-reviewer:precedence]` | Cross-category collision resolved by precedence list |
+| `[pr-reviewer:cleared]` | Re-run mode: prior finding no longer reproduces |
+
+Example:
+```
+[pr-reviewer:drop] async-state finding missing 'severity' field
+[pr-reviewer:dedup] resources/.../_PmproProgress.vue:41 (async-state) merged 2 findings
+[pr-reviewer:precedence] AllProducts.vue:174 — kept rbac-alignment, dropped a11y
+```
+
+Tail the orchestrator with `2>&1 | grep '\[pr-reviewer:'` to audit decisions
+post-run.
+
+---
+
+## Step 3 — Aggregate and dedup
+
+Collect all NDJSON output from all detectors. For each finding:
+
+1. **Dedup key:** `(file, line, category)`. Two findings with the same key are merged.
+2. **Cross-category collision:** when two detectors flag the same `(file, line)` with
+   different categories, keep one finding using this fixed precedence:
+
+   ```
+   security > rbac-alignment > data-integrity > traceability > async-state > a11y > bc-regression > error-state > ui-logic > perf
+   ```
+
+3. **Merge rules:**
+   - `category` ← higher-precedence finding's category
+   - `severity` ← max of both severities
+   - `headline` ← higher-severity finding's headline
+   - `detectors` ← union of both `detectors` arrays
+   - `evidence` / `impact` / `recommended_fix` ← higher-precedence finding's text
+
+4. Sort findings by `severity` (Blocking → Suggestion), then by `category` precedence,
+   then by `file` alphabetic, then by `line` ascending.
+
+---
+
+## Step 4 — Render the report
+
+Output shape mirrors autharif's GitHub review comments. Two top-level sections:
+
+### Section A — Summary
+
+```markdown
+## Summary
+
+**Blocking:** 4 | **High:** 7 | **Medium:** 12 | **Suggestion:** 3
+
+### Blocking
+- `app/Http/Controllers/Migration/Pmpro/PmproMigrationController.php:92` — **PMPro routes are wired to nonfunctional handlers** (traceability)
+- `resources/admin/Modules/Settings/Migration/Pmpro/_PmproProgress.vue:41` — **Retry can start concurrent import loops** (async-state)
+- ...
+
+### High
+- ...
+```
+
+For each tier, list one bullet per finding with `<file>:<line>` and `**headline**` and `(category)`.
+
+### Section B — Inline findings
+
+```markdown
+## Inline findings
+
+### `resources/admin/Modules/Settings/Migration/Pmpro/_PmproProgress.vue:41` — async-state — Blocking
+
+**Retry can start concurrent import loops**
+
+**Evidence:** retryImport() called from button handler without checking if importInFlight === true.
+
+**Impact:** Two concurrent import loops mutate state in parallel; progress UI double-counts and import can corrupt data.
+
+**Recommended fix:** Guard retryImport() with `if (this.importInFlight) return;` and await prior loop's completion before resuming.
+
+**Detectors:** `async-state`
+
+---
+```
+
+One block per finding, separated by `---`. The first line bold-headlined matches
+the autharif `<strong>...</strong>` lead-in convention so the two reports read the
+same way.
+
+---
+
+## Step 5 — Re-run mode (when report exists)
+
+If the output path already has a report:
+
+1. Read existing findings from `## Inline findings`.
+2. Re-run the detectors. For each new finding, check if a prior finding has the
+   same `(file, line, headline)`:
+   - **Match:** keep it (still open).
+   - **Prior exists, no match in new:** mark `[cleared]` in the new report — the
+     issue is fixed.
+   - **New, no prior match:** add as a fresh finding.
+3. Get the current short sha: `git rev-parse --short HEAD`.
+4. Move the existing report to `<branch>-<short-sha>.md`.
+5. Write the new report.
+6. Append a `## Re-run history` section listing each run with sha, timestamp,
+   and counts (mirrors autharif's "Rechecked [`abc1234`]. Some blocking findings were cleared." convention).
+
+---
+
+## Step 6 — Pre-flight announcement (do this before Step 1)
+
+(Borrowed from `diagnose` Phase 3: announce the plan before executing — gives the
+user a cheap interrupt point.)
+
+Before fanning out detectors, print a one-line plan:
+
+```
+[pr-reviewer:plan] 14 changed files (8 vue, 4 php, 2 scss).
+                   Detectors: a11y, async-state, error-state, traceability, bc-regression, rbac-alignment, perf-and-integrity.
+                   Skipping: (none).
+                   Estimated time: ~2 min parallel / ~8 min sequential.
+```
+
+If the user has reason to skip a detector ("we know this is a CSS-only PR, skip
+async-state"), they can interrupt and re-invoke with `--skip async-state`.
+
+---
+
+## Required behaviors (do not skip)
+
+1. **Always run `traceability` and `bc-regression`** — they are PR-shape checks, not
+   file-type checks. A PHP-only PR can still introduce a payload-key rename.
+2. **Never report a finding outside the closed category vocabulary** — if a real issue
+   doesn't fit a detector, add it to the most-relevant detector's criteria reference
+   and re-run; do not invent a new category at runtime.
+3. **Severity is conservative by default** — anything ambiguous is `Suggestion`, not
+   `Blocking`. Promote to `Blocking` only when the criteria reference says so.
+4. **Cap detector output at 50 findings** — runaway detectors hurt readability more
+   than missing edge cases.
+5. **Always emit the canonical schema** — even prose-style findings get reduced to
+   the JSON shape before rendering. The orchestrator does not render free-form text.
+
+## Anti-patterns (do not do)
+
+- Do **not** fold `pr-reviewer` into `engineering-review`. They serve different
+  cost/depth points; both should remain available.
+- Do **not** add a seventh detector before exhausting the existing six. New finding
+  categories belong in an existing detector's criteria reference, not as a new
+  parallel pass.
+- Do **not** report findings in `# Severity` section style if you skipped the inline
+  block — every summary entry must have a corresponding inline block.
+- Do **not** silently drop findings on dedup — always log to stderr what was merged.

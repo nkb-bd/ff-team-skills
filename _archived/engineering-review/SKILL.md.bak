@@ -1,0 +1,310 @@
+---
+name: engineering-review
+description: >
+  Pre-merge engineering review for any PR type — feature, fix, refactor, PHP, JS, Vue, or schema.
+  Use when asked to "review this PR", "pre-merge check", "is this ready to ship", "audit this branch",
+  "check before merge", or after finishing a feature or bug fix. Writes findings to a persistent
+  ENGINEERING-REVIEW.md and can be re-called to check which issues have been fixed.
+when_to_use: >
+  Before marking any PR ready for review. After implementing a feature. When asked
+  "review this", "check my code", "pre-merge", "is this ready", "audit the branch".
+context: fork
+allowed-tools: Read Bash(git *) Bash(grep *) Bash(find *)
+effort: high
+---
+
+# Engineering Review
+
+## Live branch context
+
+- **Diff stat:** !`git diff origin/dev...HEAD --stat 2>/dev/null || git diff HEAD~1...HEAD --stat`
+- **Commits:** !`git log origin/dev...HEAD --oneline 2>/dev/null || git log HEAD~3..HEAD --oneline`
+- **Changed files:** !`git diff origin/dev...HEAD --name-only 2>/dev/null || git diff HEAD~1..HEAD --name-only`
+
+---
+
+## Two modes
+
+**First run** — no existing `ENGINEERING-REVIEW.md`: run all 9 passes, write findings.
+
+**Re-run** — file exists: read it, re-check every OPEN finding only, update checklist, report count.
+
+Output path: `openspec/changes/<branch-slug>/ENGINEERING-REVIEW.md` or repo root.
+
+---
+
+## Step 0 — Identify PR type and load criteria
+
+Identify PR type from the diff: `Feature | Bug Fix | Refactor | Schema | JS | Vue | Mixed`
+
+Load the relevant reference file(s) from `references/` based on what changed:
+- PHP files changed → load `references/wp-php-criteria.md`
+- JS files changed → load `references/js-criteria.md`
+- Vue files changed → load `references/vue-criteria.md`
+- DB/migration files → load `references/schema-criteria.md`
+- Any PR → always run Pass 1 (Breaking Changes) and Pass 2 (Regression Risk)
+
+---
+
+## Pass 1 — Breaking Changes (all PR types)
+
+**Question:** What does external code (Pro plugin, themes, third-party plugins) depend on that changed?
+
+- Public PHP method signatures changed without `_deprecated_function()` wrapper?
+- Hook names changed without the old name still firing?
+- REST endpoint URL, method, or response shape changed without a version bump?
+- `get_option`/`update_option` key changed without migrating old data?
+- `window.*` globals removed or renamed?
+- Custom event names or payload shapes changed without backwards compat?
+- CSS classes removed that themes or JS might target?
+- DB column renamed, dropped, or type-changed without migrating existing rows?
+- New `NOT NULL` column without a default? Breaks existing rows on write.
+
+---
+
+## Pass 2 — Regression Risk (all PR types)
+
+**Question:** What currently-working behaviour could break?
+
+For each changed file: what did it do before, is it still doing all of that?
+
+- Conditional added around previously unconditional code → fallback path exists and works?
+- Early `return` added → does it skip anything that must still happen?
+- Default value changed → what breaks on first read before anyone saves the new setting?
+- Code moved to a new file → all callers updated?
+- Hook priority changed → now runs before/after something it depends on?
+- `isset()` replaced with direct access → key always exists in all contexts?
+
+---
+
+## Pass 3 — Code Quality (all PR types)
+
+See `references/wp-php-criteria.md` for WordPress-specific pattern checks.
+
+**Dead code:** imports never called, functions defined but never invoked, always-true/false branches.
+
+**Duplication:** logic copied instead of calling existing function; same `get_option()` in two new methods without a shared helper.
+
+**Complexity:** functions over ~50 lines doing more than one thing; nesting deeper than 3 levels; magic strings/numbers in more than one place.
+
+**Naming:** method names that don't describe what they do; booleans without `is`/`has`/`should` prefix; `public` methods only called internally.
+
+---
+
+## Pass 4 — WordPress PHP Patterns (PHP PRs)
+
+Load and follow `references/wp-php-criteria.md` for the full checklist.
+
+**Also load** (for richer pre-merge gating, derived from the autharif corpus):
+- `../pr-reviewer/references/rbac-alignment-criteria.md` — UI gate vs policy capability alignment, dual-source `current_user_can` checks, public endpoint publication gates
+- `../pr-reviewer/references/bc-regression-criteria.md` — filter payload key renames, default-value flips, response-shape drift, gateway contract drift, aggregate semantic shifts
+- `../pr-reviewer/references/perf-and-integrity-criteria.md` — N+1, unbounded queries, non-unique lookup updates, non-atomic state transitions, skipped data-integrity tests
+
+Summary of mandatory checks:
+- Sanitize all `$_GET`/`$_POST`/`$_REQUEST` with the right sanitizer + `wp_unslash()`
+- Escape every output at the point of output (`esc_html`, `esc_attr`, `esc_url`, `esc_js`)
+- All `$wpdb` calls with variables use `$wpdb->prepare()`
+- `get_option()` not inside loops; not called twice for same key without static cache
+- `ArrayHelper::get($arr, 'dot.key', $default)` instead of nested `isset()` ternaries
+- Hook names follow project convention (e.g. `fluentform/` prefix)
+- Nonce verified before capability check on every AJAX/REST handler
+- `current_user_can()` present on every data-modifying endpoint
+
+---
+
+## Pass 5 — JavaScript Patterns (JS PRs)
+
+Load and follow `references/js-criteria.md`.
+
+**Also load** (autharif-derived async failure modes):
+- `../pr-reviewer/references/async-state-criteria.md` — stale-response overwrites, cancel races, retry concurrent loops, progress double-count, resume-from-stale-offset
+- `../pr-reviewer/references/error-state-criteria.md` — blank UI on non-404, loading flag stuck after error, hidden import-log failures, filters invisible when panel collapses
+
+Summary:
+- Every `querySelector()` result null-checked before method calls
+- `addEventListener` in setup has matching `removeEventListener` in teardown
+- ARIA state such as `aria-expanded` stays synchronized across click handlers, responsive transitions, alternate open/close controls, and programmatic state helpers
+- Initialization inside `DOMContentLoaded` or `readyState` check — not at module evaluation
+- `fetch()` checks `response.ok` — 4xx/5xx don't throw
+- `require()` inside `if/else` → both files always bundled (document if intentional)
+
+---
+
+## Pass 6 — Vue 2 Patterns (Vue PRs)
+
+Load and follow `references/vue-criteria.md`.
+
+**Also load** (autharif-derived Vue failure modes — Vue files account for 54 of 97
+inline corpus findings, the highest-density miss category):
+- `../pr-reviewer/references/a11y-criteria.md` — mouse-only `<div onClick>`, ARIA staleness on responsive collapses, missing `aria-label` on icon-only buttons, removed focus indicators, screen-reader-hidden essential context
+- `../pr-reviewer/references/async-state-criteria.md` — same async failure modes as Pass 5, especially relevant for Vue components with async lifecycle hooks
+- `../pr-reviewer/references/error-state-criteria.md` — non-404 fetch UI, stuck loading flags, hidden failures, filters invisible when collapsed, hard-disabled blocks
+- `../pr-reviewer/references/traceability-criteria.md` — settings toggles must reach the renderer, hardcoded dummy data, bypassed config props, CTA-label mismatches
+
+Summary:
+- Options API only — no `setup()`, `ref()`, `reactive()`
+- `addEventListener` in `mounted()` → `removeEventListener` in `beforeDestroy()`
+- `$on()`/`$root.$on()` → `$off()` in `beforeDestroy()`
+- API calls use project REST client; all `.catch()` with user-visible message
+- For deep multi-detector review of a Vue-heavy PR, invoke `$pr-reviewer` instead (fans out all six detectors in parallel; engineering-review is a single-pass sanity sweep)
+
+---
+
+## Pass 7 — Performance Quick-Check (PHP PRs)
+
+- `get_option()` or DB call inside a hook firing on every page load — new **or
+  moved into one** by this PR?
+- `->get()` on a model without `->where()` or `->limit()`? → full table scan
+- `whereIn(...)->get()` whose ID list comes from request data, saved settings,
+  serialized post meta, option values, or filter output without an explicit max
+  count? → unbounded batched query
+- WordPress-API queries without bounds: `get_terms()`, `get_posts()`,
+  `get_users()`, `wp_get_object_terms()`, `WP_Query` without `posts_per_page` /
+  `number` / `numberposts`? → unbounded retrieval, often duplicates if the
+  caller doesn't `array_unique` the result
+- DB call inside a `foreach`? → N+1
+- New `add_action`/`add_filter` registered on every request that could be registered once at boot?
+- **Refactor-moved query rule.** When a refactor extracts a query into a new
+  method/file, treat it as a fresh "is this bounded?" review even though
+  behavior is unchanged. Pre-existing unbounded queries don't show up as red
+  diff lines, but the move is the right moment to add `LIMIT` / `DISTINCT` /
+  per-page caps. Diffs labelled "Refactor" are the highest-miss category for
+  this class of bug — reviewers see structure-only and skip perf checks.
+
+---
+
+## Pass 8 — Backwards Compatibility (Feature PRs)
+
+- New PHP setting: does the default preserve existing behaviour for users who never saved it?
+- New JS variable from PHP: what if the key is `undefined` on old cached pages?
+- New DB column: every read handles `NULL` gracefully for existing rows?
+- New hook: follows naming convention? Documented in changelog?
+- Removed feature: deprecation notice added? UI warning shown?
+
+---
+
+## Pass 9 — State Machine and Adversarial Inputs (all PR types)
+
+Most subtle bugs survive earlier passes because the reviewer reads the diff top-to-bottom and assumes well-formed inputs and a single "happy" state. These checks force the opposite stance.
+
+### 9.1 — Single-source-of-truth audit
+
+For each new piece of state (a `data()` field, instance property, computed, settings option):
+
+- What is the single source of truth for this value?
+- Where else is it read? Do those readers re-derive correctly when the source changes?
+- If the same boolean flag controls **both** UI visibility and data persistence/query — flag it. UI flags should not gate data flow. (See `references/vue-criteria.md` → State-Coupling.)
+
+### 9.2 — Two-axis grid for boolean flags
+
+For every boolean flag introduced or modified, draw the grid:
+
+```
+              │ feature_data: present │ feature_data: empty
+flag = true   │      A                │      B
+flag = false  │      C                │      D
+```
+
+Walk each cell. If any cell is "?" or "this can't happen but the code allows it" or "this state silently degrades" — that is the bug. Many "it works on my machine" issues live in cells C and D.
+
+### 9.3 — Index-stability rule
+
+Whenever an array is transformed (`.filter(...)`, `.map(...)`) before being exposed to a consumer that uses indices (event emitters, parent handlers, key-based lookups):
+
+- Verify the consumer indices line up with the **source** array, not the transformed one.
+- If they don't, require an `originalIndex` to be carried alongside the transformed item.
+- Grep for `\.filter\(.*\)\.map\(` and `\.filter\(` immediately preceding a `v-for` in templates.
+
+### 9.4 — Adversarial input walkthrough
+
+Before declaring the PR done, mentally feed these inputs through the changed code:
+
+- Empty array `[]`
+- Single-element wrapper `[[]]`
+- Sparse arrays with empty slots before populated entries: `[[], X, Y]` — common index-bug trigger
+- One `null` mixed in
+- Length 1 vs length >1 (off-by-one)
+- Concurrent triggers (rapid clicks before previous response returns) — mention if not addressed
+
+If any input produces a plausible-but-broken state, document it and either fix or note explicitly.
+
+### 9.5 — Symptom vs root cause
+
+When a PR fixes a reported issue, ask: **"What broader design choice made this issue possible?"** A symptom fix narrows to the reported case but leaves the underlying design open. A root-cause fix touches the design.
+
+If you change behavior under condition X to fix bug Y, also reason about condition NOT X — does it now have a related bug? (Example: hiding chips when panel collapsed fixes the "click-no-op" symptom but creates the inverse "filtered-data-no-indicator" bug. Root cause: the panel-active flag was overloaded.)
+
+---
+
+## Output format
+
+```markdown
+# Engineering Review — <PR title / branch>
+**Date:** YYYY-MM-DD | **PR type:** Feature / Fix / Refactor / Mixed
+
+## Severity Summary
+| Severity | Count |
+|---|---|
+| Critical | N |
+| High | N |
+| Medium | N |
+| Code Smell | N |
+
+## What Looks Good
+[2-4 bullet points on non-obvious things done well — prevents review feeling adversarial]
+
+## Critical — Fix Before Merge
+### C-01: <short title>
+- **File:** `path/to/file.php:line`
+- **Evidence:** `short code quote`
+- **Impact:** what breaks for which users
+- **Fix:** concrete action
+- **fix_prompt:** `Fix C-01: [one sentence Claude Code instruction to apply the fix]`
+
+## High — Significant Regression Risk
+[same structure as Critical]
+
+## Medium
+[same structure — omit fix_prompt]
+
+## Code Smells
+[same structure — omit fix_prompt]
+
+## Verification Checklist
+- [ ] C-01: description
+- [ ] C-02: description
+- [ ] H-01: description
+```
+
+### Severity definitions
+
+| Level | Definition |
+|---|---|
+| **Critical** | Active breakage — crash, data loss, security hole, silent wrong behavior |
+| **High** | A documented feature stops working or behaves differently |
+| **Medium** | Correctness, performance, or maintainability issue — no user-visible breakage |
+| **Code Smell** | Design issue, dead code, naming — no immediate impact |
+
+---
+
+## Re-run mode
+
+When `ENGINEERING-REVIEW.md` already exists:
+1. Read file, collect all OPEN findings (unchecked checklist items)
+2. Re-check each: grep-verifiable → run grep; manual → read relevant section and reason
+3. Update checklist — check off fixed items
+4. Report: **"X of Y findings resolved. Z critical issues remain."**
+5. Do NOT re-run all passes — only verify open findings
+
+---
+
+## Skill workflow
+
+```
+/engineering-review    ← first: full 8-pass review, any PR type
+/plugin-audit          ← deep security on high-risk paths flagged above
+/php-cs-fixer-style    ← formatting
+fix Critical + High
+/engineering-review    ← re-run: confirm fixes
+/pr-descriptor         ← write PR description
+```

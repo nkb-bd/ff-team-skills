@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explain This"
+  short_description: "Teach me a piece of code or a feature to mastery, then quiz me"
+  default_prompt: "Use $explain-this to teach me how this code/feature works — stage by stage, drill the whys, and quiz me until I've mastered it."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Reviewer"
+  short_description: "Multi-detector pre-merge PR review (a11y / async / traceability / RBAC / BC / errors)"
+  default_prompt: "Use $pr-reviewer to run a multi-detector pre-merge review on the current branch and write the autharif-shaped report to /Volumes/Workspace/pr-reviews/<repo>/<branch>.md (fallback: <repo>/.review/<branch>.md)."

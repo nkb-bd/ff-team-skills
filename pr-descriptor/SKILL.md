@@ -1,26 +1,28 @@
 ---
 name: pr-descriptor
-description: Generate concise, why-first pull request descriptions from git evidence and a repository PR template. Use when users ask to draft or update PR text, summarize branch work for reviewers, or fill `pull_request_template.md` while omitting non-meaningful sections.
+description: Generate concise, why-first pull request descriptions from git evidence and the merge-gate PR template (Definition of Done + review routing). Use when users ask to draft or update PR text, summarize branch work for reviewers, or fill `pull_request_template.md` with evidence-backed checklists.
 ---
 
 # PR Descriptor
 
-Generate PR descriptions that explain why the PR is needed first, then summarize what changed at a high level.
+Generate PR descriptions that explain why the PR is needed first, then summarize what changed at a high level, and fill the merge-gate checklists honestly from evidence.
 
 ## Output Contract
 
 - Always include `What does this PR do and why?`.
 - Keep output concise: short opening paragraph plus brief supporting bullets only when needed.
 - Prioritize problem, intent, and reviewer-relevant impact.
-- Avoid file-by-file or commit-by-commit narration.
+- Avoid file-by-file or commit-by-commit narration; `Key changes` carries the few `file::method` anchors that matter, nothing exhaustive.
 - Do not invent issue IDs, tests, screenshots, risks, or outcomes.
+- Gate sections (`Merge checklist`, `Changes & review routing`) are never deleted; the omit-empty-sections rule applies only to non-gate sections of repo templates.
+- Check a checklist box only when backed by evidence (test output, gate run, diff inspection). Never check on faith.
 
 ## Execution Workflow
 
 1. Resolve the PR template path in this order:
    - `.github/pull_request_template.md`
    - `.github/PULL_REQUEST_TEMPLATE.md`
-   - `references/pull_request_template.default.md` (fallback)
+   - `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md` (single source of truth, role-dev-lead.md §9–§11; offer to copy it into the repo's `.github/` when missing)
 2. Determine base branch.
    - Prefer upstream merge target if it maps to `development`, `master`, or `main`.
    - Otherwise evaluate candidates in this order:
@@ -35,12 +37,12 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
    - `git diff --name-status <base>...HEAD`
    - `git diff --stat <base>...HEAD`
    - `git log --oneline <base>..HEAD`
-   - Inspect changed files as needed to extract intent and testing details
+   - Inspect changed files as needed to extract intent, testing details, and gate evidence (debug code, schema changes, public-API surface).
 4. Derive narrative:
    - Problem or need
    - High-level solution approach
    - Scope and impact boundaries
-5. Fill template sections conditionally using the section rules.
+5. Fill template sections using the section rules.
 6. Run final quality gate checks.
 
 ## Template Section Rules
@@ -51,30 +53,45 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 - First sentence states the underlying problem.
 - Second sentence states the solution approach.
 - Optional third sentence states impact/scope boundary.
-- Include issue reference only if explicitly provided.
+- Ticket link: include if provided or discoverable from branch name, commits, or conversation context. Ask once if a ticket seems to exist but is unidentified. Omit silently when none exists — not all PRs have tickets. Never invent one.
+- Use the closing keyword that fits: `Fixes` (bug), `Closes` (completes the ticket), `Refs` (related work). Full URL when given; raw ID when given.
+- `Paired free/pro PR` line: link the counterpart PR when the diff touches a free ↔ pro contract surface (hooks, filters, REST signatures, asset handles pro consumes); otherwise `N/A`. Consistent with the Cross-repo routing tick.
 
-### Changes
+### Key changes
 
-- Include only if it adds meaningful reviewer context.
-- Keep to 1 to 4 concise bullets by capability/area.
-- Do not list raw filenames or diff noise.
-- Omit the section entirely when a change list would be obvious or redundant.
+- 3–6 bullets, each anchored to `path/File.php::method()` (or file-level when no single method applies) — what changed there and why it matters to the reviewer.
+- Anchors for the important review points, not a file-by-file inventory; diff noise (lockfiles, regenerated baselines) gets at most one combined bullet.
 
 ### How to test
 
-- Include only when there are concrete, reproducible validation steps.
-- Use numbered steps with expected outcomes.
-- Omit the section entirely when no meaningful test flow is available.
+- Required. Numbered reproduction/verification steps with expected outcomes.
+- UI changes: include before/after screenshots inline here.
+- Changes with no runnable flow (docs-only, config): state that in one line instead of fabricating steps.
 
-### Screenshots
+### Merge checklist
 
-- Include only for visual UI changes where screenshots add review value.
-- Omit when no meaningful visual delta exists.
+- Always present; never deleted.
+- Check a box only with evidence: tests ran (paste-worthy result), PHPCS/PHPStan output, diff grep for debug code/secrets, changelog diff, etc.
+- Inapplicable items: annotate `N/A — reason` inline.
+- Unverifiable items: leave unchecked with a one-line note on what is missing.
+- Any gate bypass (`--no-verify`, new `@phpstan-ignore`/`phpcs:disable`) requires a written reason in `Anything the reviewer should know?` (§8.9).
+
+### Changes & review routing
+
+- Tick area boxes (PHP, JS/Vue, Tests, Build/config) from the diff's file types — every area the diff actually touches, no more.
+- Tick ⚠ routing categories from diff evidence:
+  - auth, payments, uploads, data handling → Security-touching
+  - migrations, tables, columns, indexes → Database schema change
+  - new/changed hooks, filters, REST endpoints → Public API
+  - `docs/adr/` changes → Architecture decision (link the ADR)
+  - free ↔ pro contract surface → Cross-product / cross-repo
+- When no ⚠ category applies, tick `None of the ⚠ categories — peer review is sufficient`.
 
 ### Anything the reviewer should know?
 
-- Include only for risks, trade-offs, migrations, rollout notes, or known limits.
-- Omit when there is nothing material to flag.
+- Include risks, trade-offs, migrations, rollout notes, known limits, and written reasons for any gate bypass.
+- Bot `REQUEST CHANGES` override notes are written here by the Dev Lead only (§9); never pre-fill one.
+- Omit content (leave section minimal) when there is nothing material to flag.
 
 ## Concision Rules
 
@@ -88,10 +105,12 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 Verify before final output:
 
 - Opening section clearly answers why this PR is needed.
-- Optional sections are present only when meaningful.
-- All statements are evidence-backed.
+- Every checked box is evidence-backed; routing ticks match the diff.
+- Ticket linked, or legitimately absent.
+- Gate bypasses carry a written reason.
 - No fluff, no bloat, no redundant details.
 
 ## References
 
-- `references/pull_request_template.default.md`
+- Template (single source of truth): `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md`
+- Source policy: `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pr-review-policy.md`, `role-dev-lead.md` §9–§11

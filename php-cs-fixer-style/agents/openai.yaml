@@ -1,4 +1,0 @@
-interface:
-  display_name: "PHP CS Fixer Style"
-  short_description: "Format PHP with your shared CS Fixer rules"
-  default_prompt: "Use $php-cs-fixer-style to format and review this PHP change against my shared CS Fixer config."

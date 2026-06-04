@@ -48,6 +48,22 @@ Run exactly five audit workstreams (sub-agents):
 
 If the runtime cannot spawn literal sub-agents, emulate these as five separate passes and keep the same output boundaries.
 
+## code-review-graph context, when available
+
+If the repo has `code-review-graph` wired (`.mcp.json` mentions `code-review-graph`, `.code-review-graph/` exists, or MCP tools such as `query_graph`, `semantic_search_nodes`, `get_impact_radius`, `detect_changes`, or `get_architecture_overview` are callable), use it before grep for structural audit questions:
+
+| Audit need | Prefer graph tool | Cross-check |
+|---|---|---|
+| High-level module map | `get_architecture_overview`, `list_communities` | repo tree and direct file reads |
+| UI-to-handler trace | `query_graph callers_of` / `importers_of` | route files, enqueue files, targeted `rg` |
+| Handler-to-service/database trace | `get_impact_radius`, `query_graph callers_of` | direct call-path reads and model/query files |
+| Dead code candidates | graph dependents/callers queries | targeted `rg` before reporting |
+| Test coverage around risky paths | graph tests coverage queries, when available | test tree and test command output |
+
+Graph output should guide workstream targeting and traceability evidence, but it is not sufficient evidence by itself. Findings still need live source evidence (`File:line`, call path, or short code quote). Treat graph data as potentially stale; if it conflicts with live source, trust direct reads and mention the mismatch in audit notes.
+
+If graph is not available, continue with repo tree, `rg`, `find`, and direct file reads.
+
 ## Auditor Mindset
 
 Approach this audit as a paranoid senior security engineer reviewing code written by a junior developer who is unfamiliar with security and performance implications. Assume every input is malicious, every permission check is probably missing or wrong, every external call is a potential vulnerability, and every database query is potentially unbounded. Your job is to prove the code is safe — not assume it is.
@@ -164,6 +180,20 @@ Check at minimum:
 - Large arrays or collections built in memory from database results.
 - Missing `wp_cache_get`/`wp_cache_set` on repeated identical queries within a request.
 - Transients used for data that changes per-user (shared cache poisoning).
+
+**SQL correctness traps (catch every occurrence):**
+- `apply_filters()` callbacks that build raw SQL via `whereRaw` / `$wpdb->prepare` — verify the operator and column come from a server-side whitelist, never from `$_REQUEST`. Even if the value is parameterized, an attacker-controlled operator string is enough to break out.
+- `CAST(col AS X)` where X is not a valid MySQL cast type. Valid types: `BINARY, CHAR, DATE, DATETIME, DECIMAL, JSON, NCHAR, SIGNED, TIME, UNSIGNED`. **`DOUBLE` and `FLOAT` are NOT valid** — they cause silent SQL errors that fall back to unfiltered results in the calling code.
+- A REGEXP/CAST guard (`col REGEXP '^[0-9]+$' AND CAST(col AS DECIMAL) = ?`) applied to columns that are already typed numeric in the schema. The guard is only needed for TEXT columns that may hold non-numeric values; on typed columns it forces a full table scan and defeats the index.
+- `OR` between filter groups not wrapped in an outer `where(function($q) { ... })`: AND binds tighter than OR, so the OR escapes outer scope conditions like `form_id = ?` and matches rows from other forms.
+- `$query->distinct()` always applied even when no joins exist — DISTINCT forces a sort/hash pass with no rows to deduplicate.
+
+**Stateful service object hazards:**
+- A class instantiated once via `init()` (registered as a hook callback / singleton-by-convention) holding instance properties that are appended to during request handling — if the same hook fires twice in one request, the second call inherits stale state from the first. Look for `$this->someArray[] = ...` inside hook callbacks; require a reset at the top of the callback.
+- Memoization caches keyed only by request lifecycle (instance properties): correct as long as the class is instantiated per request, but fragile if the bootstrap pattern changes.
+
+**PHP 8+ type-fatal traps:**
+- `array_map`, `array_filter`, `array_walk`, `count`, `foreach` over a value that isn't guaranteed to be an array. PHP 7.x warned, PHP 8+ throws `TypeError`. Look especially at code paths that take user-submitted JSON / REST payloads where a field could be `null` or a scalar.
 
 ## Traceability Checks
 

@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code Skill System: Unified</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: oklch(0.985 0.006 245);
+    --surface: oklch(0.962 0.008 245);
+    --panel: oklch(0.996 0.004 245);
+    --panel-2: oklch(0.975 0.006 245);
+    --ink: oklch(0.22 0.024 250);
+    --muted: oklch(0.48 0.03 250);
+    --faint: oklch(0.64 0.026 250);
+    --line: oklch(0.89 0.012 250);
+    --line-strong: oklch(0.81 0.018 250);
+    --code-bg: oklch(0.94 0.012 250);
+    --feature: oklch(0.53 0.17 260);
+    --bug: oklch(0.58 0.17 38);
+    --review: oklch(0.52 0.13 166);
+    --principles: oklch(0.54 0.15 306);
+    --shadow: 0 18px 45px oklch(0.35 0.04 250 / 0.09);
+    --radius: 10px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--feature);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  code {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--code-bg);
+    color: oklch(0.32 0.05 252);
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    padding: 1px 5px;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 22px 72px;
+  }
+
+  .topbar {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    padding: 10px 0 18px;
+  }
+
+  .brand {
+    align-items: baseline;
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .brand strong {
+    font-size: 15px;
+    font-weight: 760;
+  }
+
+  .brand span,
+  .meta {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .meta {
+    text-align: right;
+  }
+
+  .hero {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+    padding: 42px 0 28px;
+  }
+
+  .eyebrow {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 720;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    margin-top: 0;
+  }
+
+  h1 {
+    font-size: 38px;
+    font-weight: 780;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    max-width: 780px;
+  }
+
+  .lead {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 72ch;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 760;
+    line-height: 1.2;
+    margin: 44px 0 12px;
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 760;
+    letter-spacing: 0.07em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  h4 {
+    font-size: 18px;
+    font-weight: 760;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--muted);
+  }
+
+  .summary {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+
+  .summary dl {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .summary dt {
+    color: var(--faint);
+    font-size: 11px;
+    font-weight: 720;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .summary dt:not(:first-child) {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .summary dd {
+    margin: 2px 0 0;
+  }
+
+  .nav {
+    background: oklch(0.985 0.006 245 / 0.94);
+    border-bottom: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+    margin: 0 -22px;
+    overflow-x: auto;
+    padding: 10px 22px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .nav a,
+  .tag,
+  .pill,
+  .step {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    display: inline-flex;
+    gap: 6px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .nav a {
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 7px 10px;
+    text-decoration: none;
+  }
+
+  .nav a:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+
+  .tag {
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+
+  .pill {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  .feature-text {
+    color: var(--feature);
+  }
+
+  .bug-text {
+    color: var(--bug);
+  }
+
+  .review-text {
+    color: var(--review);
+  }
+
+  .principles-text {
+    color: var(--principles);
+  }
+
+  .dispatch {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .dispatch-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .dispatch-row + .dispatch-row {
+    border-top: 1px solid var(--line);
+  }
+
+  .dispatch-cell {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    padding: 13px 16px;
+  }
+
+  .dispatch-cell + .dispatch-cell {
+    border-left: 1px solid var(--line);
+  }
+
+  .dispatch-head {
+    background: var(--surface);
+    color: var(--faint);
+    font-size: 11px;
+    font-weight: 740;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .workflow {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .skill {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+
+  .skill-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .skill h4 {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 17px;
+  }
+
+  .skill p {
+    font-size: 13px;
+    min-height: 62px;
+  }
+
+  .modes {
+    display: grid;
+    gap: 7px;
+  }
+
+  .mode {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12.5px;
+    padding: 8px 10px;
+  }
+
+  .mode strong {
+    color: var(--ink);
+  }
+
+  .source-link {
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    display: block;
+    font-size: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .source-link a {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+  }
+
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .lane,
+  .chain {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lane-label {
+    color: var(--faint);
+    font-size: 11px;
+    font-weight: 720;
+    letter-spacing: 0.08em;
+    min-width: 88px;
+    text-transform: uppercase;
+  }
+
+  .step {
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .step.primary {
+    background: oklch(0.95 0.034 260);
+    border-color: oklch(0.82 0.07 260);
+    color: var(--feature);
+  }
+
+  .arrow {
+    color: var(--faint);
+  }
+
+  .grid-2,
+  .grid-3 {
+    display: grid;
+    gap: 14px;
+  }
+
+  .grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-4 {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+
+  .list {
+    display: grid;
+    gap: 0;
+  }
+
+  .list-item {
+    align-items: baseline;
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 185px minmax(0, 1fr);
+    padding: 10px 0;
+  }
+
+  .list-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .list-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .list-item strong {
+    color: var(--ink);
+    min-width: 0;
+  }
+
+  .list-item span {
+    color: var(--muted);
+    min-width: 0;
+  }
+
+  .artifact-list .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-list .list-item {
+    align-items: start;
+    grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  }
+
+  .artifact-list code {
+    display: inline;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--line);
+    padding: 11px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: var(--surface);
+    color: var(--faint);
+    font-size: 11px;
+    font-weight: 740;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .footer {
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 12px;
+    margin-top: 48px;
+    padding-top: 18px;
+  }
+
+  .footer h2 {
+    color: var(--ink);
+    font-size: 16px;
+    margin: 0 0 12px;
+  }
+
+  .footer .list {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--muted);
+    margin-bottom: 14px;
+    padding: 14px 16px;
+  }
+
+  .footer .list-item {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  @media (max-width: 960px) {
+    .hero,
+    .grid-2,
+    .grid-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .workflow {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dispatch-row {
+      grid-template-columns: 1fr;
+    }
+
+    .dispatch-cell + .dispatch-cell {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .shell {
+      padding: 18px 14px 48px;
+    }
+
+    .topbar,
+    .brand {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .meta {
+      text-align: left;
+    }
+
+    h1 {
+      font-size: 30px;
+    }
+
+    .workflow {
+      grid-template-columns: 1fr;
+    }
+
+    .grid-4 {
+      grid-template-columns: 1fr;
+    }
+
+    .list-item {
+      grid-template-columns: 1fr;
+    }
+
+    .nav {
+      margin-left: -14px;
+      margin-right: -14px;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <strong>Claude Code Skill System</strong>
+      <span>Unified operating map</span>
+    </div>
+    <div class="meta">Updated 2026-05-21<br><code>~/.claude/skills/SKILL-SYSTEM.html</code></div>
+  </div>
+
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Skill dispatch reference</div>
+      <h1>One page for choosing the right Claude Code workflow.</h1>
+      <p class="lead">Four canonical operational skills, one principles layer, and a clear replacement map for archived review and diagnosis skills. Use this as the working reference when deciding whether the next move is build, fix, find, review, or plan.</p>
+      <div class="lane" aria-label="Skill categories">
+        <span class="tag"><span class="feature-text">Build</span> new-feature</span>
+        <span class="tag"><span class="bug-text">Fix</span> bug-fix</span>
+        <span class="tag"><span class="review-text">Review</span> pre-merge-review</span>
+        <span class="tag"><span class="principles-text">Principles</span> rigorous-coding-workflow</span>
+      </div>
+    </div>
+
+    <aside class="summary" aria-label="Summary">
+      <dl>
+        <dt>Default question</dt>
+        <dd>What is the user's intent?</dd>
+        <dt>Canonical skills</dt>
+        <dd>4 primary choices, with modes for size and risk.</dd>
+        <dt>Graph rule</dt>
+        <dd>Use <code>code-review-graph</code> before grep for structural questions when available; cross-check with live source.</dd>
+        <dt>Flow folder</dt>
+        <dd><a href="file:///Volumes/Projects/Tools/agent-skills/_flows/claude-code-unified/README.md"><code>_flows/claude-code-unified</code></a></dd>
+        <dt>Lounge tasks</dt>
+        <dd><a href="file:///Volumes/Projects/Tools/agent-skills/_flows/claude-code-unified/dev-lead-lounge-board-tasks.md"><code>dev-lead-lounge-board-tasks.md</code></a></dd>
+        <dt>Archived skills</dt>
+        <dd><code>engineering-review</code>, <code>pr-reviewer</code>, <code>debugger</code>, <code>diagnose</code></dd>
+      </dl>
+    </aside>
+  </header>
+
+  <nav class="nav" aria-label="Page sections">
+    <a href="#dispatch">Dispatch</a>
+    <a href="#flow">Flow</a>
+    <a href="#new-feature">New feature</a>
+    <a href="#bug-fix">Bug fix</a>
+    <a href="#review">Review</a>
+    <a href="#graph">Graph use</a>
+    <a href="#supporting">Supporting</a>
+    <a href="#sources">Source files</a>
+    <a href="#archived">Archived</a>
+    <a href="#claude-md">CLAUDE.md</a>
+  </nav>
+
+  <main>
+    <section id="dispatch" aria-labelledby="dispatch-heading">
+      <h2 id="dispatch-heading">Dispatch: intent to skill</h2>
+      <div class="dispatch">
+        <div class="dispatch-row dispatch-head">
+          <div class="dispatch-cell">User intent</div>
+          <div class="dispatch-cell">Use this skill</div>
+        </div>
+        <div class="dispatch-row">
+          <div class="dispatch-cell">Build a feature, add a capability, or handle a non-trivial enhancement.</div>
+          <div class="dispatch-cell"><span class="pill feature-text">new-feature</span></div>
+        </div>
+        <div class="dispatch-row">
+          <div class="dispatch-cell">Fix a reported bug, diagnose broken behavior, or handle failing CI.</div>
+          <div class="dispatch-cell"><span class="pill bug-text">bug-fix</span></div>
+        </div>
+        <div class="dispatch-row">
+          <div class="dispatch-cell">Find new bugs in a plugin with a discovery sweep.</div>
+          <div class="dispatch-cell"><span class="pill bug-text">bug-fix find</span></div>
+        </div>
+        <div class="dispatch-row">
+          <div class="dispatch-cell">Run a pre-merge review, readiness check, or branch audit.</div>
+          <div class="dispatch-cell"><span class="pill review-text">pre-merge-review</span><span class="pill review-text">light</span></div>
+        </div>
+        <div class="dispatch-row">
+          <div class="dispatch-cell">Plan rigorously, align principles, or decide how to approach complex work.</div>
+          <div class="dispatch-cell"><span class="pill principles-text">rigorous-coding-workflow</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="flow" aria-labelledby="flow-heading">
+      <h2 id="flow-heading">Flow overview</h2>
+      <div class="workflow">
+        <article class="skill">
+          <div class="skill-header">
+            <span class="eyebrow">Build</span>
+            <span class="pill feature-text">primary</span>
+          </div>
+          <h4 class="feature-text">new-feature</h4>
+          <p>End-to-end composite workflow. Picks an intensity tier, runs gated phases, then routes build, review, and ship steps.</p>
+          <div class="modes">
+            <div class="mode"><strong>Trivial:</strong> skip skill, just commit.</div>
+            <div class="mode"><strong>Small:</strong> Phase 5 light.</div>
+            <div class="mode"><strong>Medium:</strong> Plan, build, light review.</div>
+            <div class="mode"><strong>Large:</strong> full workflow.</div>
+            <div class="mode"><strong>Breaking:</strong> full workflow plus plugin audit.</div>
+          </div>
+          <span class="source-link">Source: <a href="file:///Volumes/Projects/Tools/agent-skills/new-feature/SKILL.md">new-feature/SKILL.md</a></span>
+        </article>
+
+        <article class="skill">
+          <div class="skill-header">
+            <span class="eyebrow">Fix and find</span>
+            <span class="pill bug-text">default</span>
+          </div>
+          <h4 class="bug-text">bug-fix</h4>
+          <p>Single bug-handling skill with two modes: fix a known issue, or find issues through a verifier-backed sweep.</p>
+          <div class="modes">
+            <div class="mode"><strong>fix:</strong> reproduce, minimise, instrument, fix, test.</div>
+            <div class="mode"><strong>find:</strong> Finder, Verifier, calibration report.</div>
+            <div class="mode"><strong>graph:</strong> callers, dependents, tests, impact radius when available.</div>
+          </div>
+          <span class="source-link">Source: <a href="file:///Volumes/Projects/Tools/agent-skills/bug-fix/SKILL.md">bug-fix/SKILL.md</a></span>
+        </article>
+
+        <article class="skill">
+          <div class="skill-header">
+            <span class="eyebrow">Review</span>
+            <span class="pill review-text">gate</span>
+          </div>
+          <h4 class="review-text">pre-merge-review</h4>
+          <p>Single pre-merge gate. Full mode combines parallel detectors with sequential pattern passes; light mode is for tiny diffs.</p>
+          <div class="modes">
+            <div class="mode"><strong>full:</strong> 7 detectors plus 9 pattern passes.</div>
+            <div class="mode"><strong>light:</strong> sequential passes only.</div>
+            <div class="mode"><strong>graph:</strong> review context and impact radius before detector fan-out.</div>
+          </div>
+          <span class="source-link">Source: <a href="file:///Volumes/Projects/Tools/agent-skills/pre-merge-review/SKILL.md">pre-merge-review/SKILL.md</a></span>
+        </article>
+
+        <article class="skill">
+          <div class="skill-header">
+            <span class="eyebrow">Principles</span>
+            <span class="pill principles-text">always on</span>
+          </div>
+          <h4 class="principles-text">rigorous-coding-workflow</h4>
+          <p>The values layer underneath operational skills. It activates implicitly on non-trivial work.</p>
+          <div class="modes">
+            <div class="mode">Plan via OpenSpec when risk warrants it.</div>
+            <div class="mode">Use subagents for context hygiene.</div>
+            <div class="mode">Capture lessons from corrections.</div>
+            <div class="mode">Verify before declaring done.</div>
+          </div>
+          <span class="source-link">Source: <a href="file:///Volumes/Projects/Tools/agent-skills/rigorous-coding-workflow/SKILL.md">rigorous-coding-workflow/SKILL.md</a></span>
+        </article>
+      </div>
+
+      <div class="diagram" style="margin-top:14px;">
+        <div class="lane">
+          <span class="lane-label">Intent</span>
+          <span class="step primary">User asks</span>
+          <span class="arrow">to</span>
+          <span class="step">Choose skill</span>
+          <span class="arrow">to</span>
+          <span class="step">Run mode</span>
+          <span class="arrow">to</span>
+          <span class="step">Verify output</span>
+        </div>
+        <div class="lane">
+          <span class="lane-label">Pipeline</span>
+          <span class="step primary">new-feature</span>
+          <span class="arrow">calls</span>
+          <span class="step">bug-fix on regressions</span>
+          <span class="arrow">then</span>
+          <span class="step">pre-merge-review</span>
+          <span class="arrow">then</span>
+          <span class="step">pr-descriptor</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="new-feature" aria-labelledby="new-feature-heading">
+      <h2 id="new-feature-heading">Inside <code>new-feature</code></h2>
+      <div class="panel">
+        <div class="chain">
+          <span class="step primary">Phase 0: Triage</span>
+          <span class="arrow">to</span>
+          <span class="step">Phase 1: Align with grill-with-docs</span>
+          <span class="arrow">to</span>
+          <span class="step">Phase 2: Plan with OpenSpec and design-an-interface</span>
+          <span class="arrow">to</span>
+          <span class="step">Phase 3: Spec</span>
+          <span class="arrow">to</span>
+          <span class="step">Phase 4: Build with tdd and bug-fix</span>
+          <span class="arrow">to</span>
+          <span class="step primary">Phase 5: Review</span>
+          <span class="arrow">to</span>
+          <span class="step">Phase 6: Ship</span>
+        </div>
+        <p style="margin-top:14px;">Each phase has an explicit approval gate. Trivial changes skip the workflow; small changes run the light review path.</p>
+      </div>
+      <div class="grid-2" style="margin-top:14px;">
+        <article class="panel">
+          <h3 class="feature-text">Phase 0: Triage</h3>
+          <div class="list">
+            <div class="list-item"><strong>Read project rules</strong><span>Load <code>CLAUDE.md</code> and <code>AGENTS.md</code> first; they override defaults for branch, hooks, commits, stack, and test commands.</span></div>
+            <div class="list-item"><strong>Find upstream artifact</strong><span>Look for issue, PRD, OpenSpec change, or tracer-bullet task before asking discovery questions.</span></div>
+            <div class="list-item"><strong>Pick tier</strong><span>Trivial skips the skill; Small runs light review; Medium runs plan/build/light review; Large runs full flow; Breaking adds mandatory align and plugin audit.</span></div>
+            <div class="list-item"><strong>Use graph if available</strong><span><code>detect_changes</code> helps score risk and pick the right tier before broad grep.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 1: Align</h3>
+          <div class="list">
+            <div class="list-item"><strong>Invoke <code>grill-with-docs</code></strong><span>Confirm vocabulary against project docs and ADRs.</span></div>
+            <div class="list-item"><strong>Create/update <code>CONTEXT.md</code></strong><span>Capture the project vocabulary, canonical nouns, constraints, and agreed problem language during alignment.</span></div>
+            <div class="list-item"><strong>Read/update <code>docs/adr/*.md</code></strong><span>Use existing ADRs as constraints; create a new ADR only when the decision is load-bearing.</span></div>
+            <div class="list-item"><strong>Resolve noun</strong><span>Choose the canonical feature name and the user/problem it serves.</span></div>
+            <div class="list-item"><strong>Define smallest value</strong><span>Agree on the smallest version that is still worth shipping.</span></div>
+            <div class="list-item"><strong>Gate</strong><span>Show one-sentence problem statement plus canonical noun; wait for approval.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 2: Plan</h3>
+          <div class="list">
+            <div class="list-item"><strong>Name change</strong><span>Use <code>issue-&lt;n&gt;-&lt;noun&gt;</code> when linked to an issue, otherwise kebab-case noun.</span></div>
+            <div class="list-item"><strong>Create OpenSpec folder</strong><span>Run <code>openspec new change &lt;name&gt;</code> to create <code>openspec/changes/&lt;name&gt;/</code>.</span></div>
+            <div class="list-item"><strong>Create <code>proposal.md</code></strong><span>Write Why, What Changes, Capabilities, and Impact; mark breaking changes explicitly.</span></div>
+            <div class="list-item"><strong>Large tier design</strong><span>Use <code>design-an-interface</code> for 3+ shapes, compare, choose one, then carry the chosen design into <code>design.md</code>.</span></div>
+            <div class="list-item"><strong>Gate</strong><span>Show proposal and selected design; wait for approval.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 3: Spec</h3>
+          <div class="list">
+            <div class="list-item"><strong>Create <code>specs/&lt;capability&gt;/spec.md</code></strong><span>Write requirements with SHALL/MUST language.</span></div>
+            <div class="list-item"><strong>Scenarios</strong><span>Each scenario uses WHEN/THEN and should map to a future test.</span></div>
+            <div class="list-item"><strong>Create <code>design.md</code></strong><span>Capture context, goals, decisions, alternatives, risks, migration, and open questions.</span></div>
+            <div class="list-item"><strong>Create <code>tasks.md</code></strong><span>Write small session-sized checklist items grouped by setup, core implementation, tests, docs, and ship.</span></div>
+            <div class="list-item"><strong>Validate</strong><span>Run <code>openspec validate &lt;name&gt; --strict</code>.</span></div>
+            <div class="list-item"><strong>Gate</strong><span>Show spec and tasks; wait for approval.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 4: Build</h3>
+          <div class="list">
+            <div class="list-item"><strong>TDD loop</strong><span>Use <code>tdd</code>: Red failing test, Green minimal code, Refactor only after green.</span></div>
+            <div class="list-item"><strong>WordPress safety</strong><span>Sanitize and unslash input, escape output, verify nonce before capability, prepare SQL, protect REST routes.</span></div>
+            <div class="list-item"><strong>Extension seams</strong><span>Add meaningful filters/actions where Pro or third parties need to short-circuit, extend, or observe.</span></div>
+            <div class="list-item"><strong>Repo style</strong><span>Follow the target stack: FluentPlayer uses Vue 3; FluentForm uses Vue 2; read project docs to confirm.</span></div>
+            <div class="list-item"><strong>Classmap</strong><span>After adding PHP classes, run composer autoload refresh and verify classmap when the repo needs it.</span></div>
+            <div class="list-item"><strong>Update <code>tasks.md</code></strong><span>Mark OpenSpec task checkboxes as milestones complete, commit intentionally, never push without explicit consent.</span></div>
+            <div class="list-item"><strong>Bug during build</strong><span>Switch into <code>bug-fix</code> and build a feedback loop before guessing.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 5: Review</h3>
+          <div class="list">
+            <div class="list-item"><strong>Light</strong><span>For Tier <= Medium, run <code>pre-merge-review light</code> with sequential pattern passes only.</span></div>
+            <div class="list-item"><strong>Deep</strong><span>For Large and Breaking, run full <code>pre-merge-review</code>: seven detectors plus sequential passes.</span></div>
+            <div class="list-item"><strong>Create review report</strong><span>Write a re-runnable report under hosted review storage, repo <code>.review/&lt;branch&gt;.md</code>, or <code>openspec/changes/&lt;name&gt;/PRE-MERGE-REVIEW.md</code>.</span></div>
+            <div class="list-item"><strong>Resolve</strong><span>Address every Blocking finding, re-run review, and track cleared findings.</span></div>
+            <div class="list-item"><strong>Gate</strong><span>Show the report; wait for approval before push.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Phase 6: Ship</h3>
+          <div class="list">
+            <div class="list-item"><strong>Create PR description</strong><span>Use <code>pr-descriptor</code> from the real git diff and repo PR template.</span></div>
+            <div class="list-item"><strong>Issue close</strong><span>Use <code>Closes #n</code> or <code>Fixes #n</code> when Phase 0 found an upstream issue.</span></div>
+            <div class="list-item"><strong>Consent</strong><span>Ask before pushing or running <code>gh pr create</code>; approval is not permanent.</span></div>
+            <div class="list-item"><strong>Archive OpenSpec</strong><span>After merge, run <code>openspec archive &lt;change-name&gt;</code> so accepted requirements move into long-lived <code>specs/</code>.</span></div>
+            <div class="list-item"><strong>Post-merge docs</strong><span>Use <code>plugin-audit</code> quarterly; update <code>CONTEXT.md</code> again if shipped work introduced new domain terms.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="feature-text">Never do</h3>
+          <div class="list">
+            <div class="list-item"><strong>No mega-step</strong><span>Do not collapse the workflow; the gates are where cheap corrections happen.</span></div>
+            <div class="list-item"><strong>No stale review</strong><span>Validate review criteria before using them for important work.</span></div>
+            <div class="list-item"><strong>No mid-feature rewrite</strong><span>Do not refactor the whole codebase while shipping a feature; defer architecture lift.</span></div>
+            <div class="list-item"><strong>No hidden push</strong><span>Never push, open PR, or assume consent without asking.</span></div>
+          </div>
+        </article>
+      </div>
+      <div class="panel artifact-list" style="margin-top:14px;">
+        <h3 class="feature-text">Files created or updated by the process</h3>
+        <div class="grid-3">
+          <div class="list">
+            <div class="list-item"><strong><code>CLAUDE.md</code> / <code>AGENTS.md</code></strong><span>Read first when present. They define project-specific commands, stack, branch, hook prefix, style, and safety rules.</span></div>
+            <div class="list-item"><strong><code>CONTEXT.md</code></strong><span>Created or updated by alignment work when project vocabulary, domain nouns, or decisions need to be captured.</span></div>
+            <div class="list-item"><strong><code>docs/adr/*.md</code></strong><span>Read during alignment/design. New ADRs are created only for load-bearing decisions, schema choices, public API design, or debated architecture.</span></div>
+          </div>
+          <div class="list">
+            <div class="list-item"><strong><code>openspec/changes/&lt;name&gt;/proposal.md</code></strong><span>Created in Phase 2 with Why, What Changes, Capabilities, and Impact.</span></div>
+            <div class="list-item"><strong><code>openspec/changes/&lt;name&gt;/design.md</code></strong><span>Created in Phase 3 with context, goals, decisions, alternatives, risks, migration, and open questions.</span></div>
+            <div class="list-item"><strong><code>openspec/changes/&lt;name&gt;/tasks.md</code></strong><span>Created in Phase 3 and updated during Phase 4 as work is completed.</span></div>
+            <div class="list-item"><strong><code>openspec/changes/&lt;name&gt;/specs/&lt;capability&gt;/spec.md</code></strong><span>Created in Phase 3 with requirements and scenarios that map to tests.</span></div>
+          </div>
+          <div class="list">
+            <div class="list-item"><strong><code>.review/&lt;branch&gt;.md</code></strong><span>Fallback pre-merge review report when hosted review storage is unavailable.</span></div>
+            <div class="list-item"><strong><code>openspec/changes/&lt;name&gt;/PRE-MERGE-REVIEW.md</code></strong><span>Review report location when the branch is tracked by OpenSpec.</span></div>
+            <div class="list-item"><strong><code>bug-discovery-report.md</code></strong><span>Created by <code>bug-fix find</code>, not by normal feature work.</span></div>
+            <div class="list-item"><strong><code>specs/</code> archived output</strong><span>After merge, <code>openspec archive &lt;name&gt;</code> moves accepted changes into long-lived specs.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bug-fix" aria-labelledby="bug-fix-heading">
+      <h2 id="bug-fix-heading">Inside <code>bug-fix</code></h2>
+      <div class="grid-2">
+        <article class="panel">
+          <h3 class="bug-text">Fix mode</h3>
+          <div class="chain">
+            <span class="step primary">Feedback loop</span>
+            <span class="step">Reproduce</span>
+            <span class="step">Hypothesise</span>
+            <span class="step">Instrument</span>
+            <span class="step">Fix and regression test</span>
+            <span class="step">Cleanup and post-mortem</span>
+          </div>
+          <p style="margin-top:14px;"><strong>Phase 1 is the skill:</strong> build a fast deterministic pass/fail loop. The rest becomes mechanical once that exists.</p>
+        </article>
+        <article class="panel">
+          <h3 class="bug-text">Find mode</h3>
+          <div class="chain">
+            <span class="step primary">Finder</span>
+            <span class="step">Verifier</span>
+            <span class="step">Feedback</span>
+            <span class="step">bug-discovery-report.md</span>
+          </div>
+          <p style="margin-top:14px;">For WordPress plugins. The verifier reclassifies each candidate as confirmed, rejected, or needing manual verification.</p>
+          <div class="list">
+            <div class="list-item"><strong><code>report-template.md</code></strong><span>Output shape</span></div>
+            <div class="list-item"><strong><code>wordpress-plugin-structure-map.md</code></strong><span>WPManageNinja baseline</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="review" aria-labelledby="review-heading">
+      <h2 id="review-heading">Inside <code>pre-merge-review</code></h2>
+      <div class="grid-2">
+        <article class="panel">
+          <h3 class="review-text">7 specialized detectors</h3>
+          <div class="list">
+            <div class="list-item"><strong>Accessibility</strong><span>Keyboard navigation, screen readers, focus, ARIA.</span></div>
+            <div class="list-item"><strong>Async races</strong><span>Stale responses, retry races, cancel races.</span></div>
+            <div class="list-item"><strong>UI to backend wiring</strong><span>Hardcoded stubs, CTA mismatch, dropped context.</span></div>
+            <div class="list-item"><strong>Permissions and capabilities</strong><span>UI gates mapped to policy capabilities.</span></div>
+            <div class="list-item"><strong>Backward compatibility</strong><span>Payload renames, default flips, shape drift.</span></div>
+            <div class="list-item"><strong>Error handling UX</strong><span>Blank-on-error, stuck spinners, hidden failures.</span></div>
+            <div class="list-item"><strong>Performance and data integrity</strong><span>N+1 queries, unbounded work, non-atomic state.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3 class="review-text">9 sequential pattern passes</h3>
+          <div class="list">
+            <div class="list-item"><strong>Pass A</strong><span>Breaking changes</span></div>
+            <div class="list-item"><strong>Pass B</strong><span>Regression risk</span></div>
+            <div class="list-item"><strong>Pass C</strong><span>Code quality</span></div>
+            <div class="list-item"><strong>Pass D</strong><span>WordPress and PHP patterns</span></div>
+            <div class="list-item"><strong>Pass E</strong><span>JavaScript patterns</span></div>
+            <div class="list-item"><strong>Pass F</strong><span>Vue 2 patterns</span></div>
+            <div class="list-item"><strong>Pass G</strong><span>Performance quick-check</span></div>
+            <div class="list-item"><strong>Pass H</strong><span>Backward compatibility</span></div>
+            <div class="list-item"><strong>Pass I</strong><span>State machine and adversarial inputs</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="graph" aria-labelledby="graph-heading">
+      <h2 id="graph-heading">code-review-graph usage</h2>
+      <div class="panel">
+        <p>When a repo is indexed, graph tools are the first stop for structural questions. They do not replace reading the diff or source files.</p>
+        <div class="list">
+          <div class="list-item"><strong><code>new-feature</code></strong><span>Uses graph during triage, alignment, spec/design, build, and review phases.</span></div>
+          <div class="list-item"><strong><code>bug-fix</code></strong><span>Uses graph for changed flows, callers, importers, impact radius, existing tests, and regression-test seams.</span></div>
+          <div class="list-item"><strong><code>pre-merge-review</code></strong><span>Uses graph for review context, affected flows, callers/importers, tests, and impact radius before detector fan-out.</span></div>
+          <div class="list-item"><strong><code>plugin-audit</code></strong><span>Uses graph for module maps, UI-to-handler traces, handler-to-database traces, dead-code candidates, and risky-path coverage.</span></div>
+          <div class="list-item"><strong><code>cross-plugin-coordination</code></strong><span>Uses graph for Free/Pro contract surface inventory when both repos are indexed.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="supporting" aria-labelledby="supporting-heading">
+      <h2 id="supporting-heading">Supporting skills</h2>
+      <div class="grid-3">
+        <article class="panel">
+          <h3>Planning and alignment</h3>
+          <div class="list">
+            <div class="list-item"><strong><code>grill-with-docs</code></strong><span>Sync vocabulary against context docs.</span></div>
+            <div class="list-item"><strong><code>design-an-interface</code></strong><span>Generate radically different shapes.</span></div>
+            <div class="list-item"><strong><code>improve-codebase-architecture</code></strong><span>Post-fix architectural lift.</span></div>
+            <div class="list-item"><strong><code>request-refactor-plan</code></strong><span>Plan refactors as tiny commits.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Build and ship</h3>
+          <div class="list">
+            <div class="list-item"><strong><code>tdd</code></strong><span>Red-green-refactor loop.</span></div>
+            <div class="list-item"><strong><code>commit-push-pr</code></strong><span>Full git workflow.</span></div>
+            <div class="list-item"><strong><code>pr-descriptor</code></strong><span>Why-first PR description.</span></div>
+            <div class="list-item"><strong><code>php-cs-fixer-style</code></strong><span>PHP formatting.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Deep audit and cross-plugin</h3>
+          <div class="list">
+            <div class="list-item"><strong><code>plugin-audit</code></strong><span>Quarterly deep audit.</span></div>
+            <div class="list-item"><strong><code>pro-addon-development</code></strong><span>Free to Pro patterns.</span></div>
+            <div class="list-item"><strong><code>cross-plugin-coordination</code></strong><span>Paired Free and Pro PRs.</span></div>
+            <div class="list-item"><strong><code>setup-code-review-graph</code></strong><span>Wire knowledge-graph MCP.</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="sources" aria-labelledby="sources-heading">
+      <h2 id="sources-heading">Source files</h2>
+      <div class="grid-4">
+        <article class="panel">
+          <h3>Primary skills</h3>
+          <div class="list">
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/new-feature/SKILL.md"><code>new-feature</code></a></strong><span>Build workflow.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/bug-fix/SKILL.md"><code>bug-fix</code></a></strong><span>Fix and find modes.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pre-merge-review/SKILL.md"><code>pre-merge-review</code></a></strong><span>Review gate.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/rigorous-coding-workflow/SKILL.md"><code>rigorous-coding-workflow</code></a></strong><span>Principles layer.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Planning</h3>
+          <div class="list">
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/grill-with-docs/SKILL.md"><code>grill-with-docs</code></a></strong><span>Alignment.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/design-an-interface/SKILL.md"><code>design-an-interface</code></a></strong><span>Interface options.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/improve-codebase-architecture/SKILL.md"><code>improve-codebase-architecture</code></a></strong><span>Architecture lift.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/request-refactor-plan/SKILL.md"><code>request-refactor-plan</code></a></strong><span>Refactor plan.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Build and ship</h3>
+          <div class="list">
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/tdd/SKILL.md"><code>tdd</code></a></strong><span>Test-first loop.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pr-descriptor/SKILL.md"><code>pr-descriptor</code></a></strong><span>PR description.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/php-cs-fixer-style/SKILL.md"><code>php-cs-fixer-style</code></a></strong><span>PHP style.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Audit and cross-plugin</h3>
+          <div class="list">
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/plugin-audit/SKILL.md"><code>plugin-audit</code></a></strong><span>Deep audit.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pro-addon-development/SKILL.md"><code>pro-addon-development</code></a></strong><span>Pro addon patterns.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/cross-plugin-coordination/SKILL.md"><code>cross-plugin-coordination</code></a></strong><span>Free and Pro coordination.</span></div>
+            <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/setup-code-review-graph/SKILL.md"><code>setup-code-review-graph</code></a></strong><span>Graph MCP setup.</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="archived" aria-labelledby="archived-heading">
+      <h2 id="archived-heading">Archived skills</h2>
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>Old skill</th>
+              <th>Replacement</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>engineering-review</code></td>
+              <td><code>pre-merge-review</code> full or light</td>
+              <td>One review skill now owns both modes.</td>
+            </tr>
+            <tr>
+              <td><code>pr-reviewer</code></td>
+              <td><code>pre-merge-review</code> full</td>
+              <td>The multi-detector fan-out is now the default full review path.</td>
+            </tr>
+            <tr>
+              <td><code>debugger</code></td>
+              <td><code>bug-fix find</code></td>
+              <td>The WordPress Finder, Verifier, Feedback loop is now a bug-fix mode.</td>
+            </tr>
+            <tr>
+              <td><code>diagnose</code></td>
+              <td><code>bug-fix</code> fix mode</td>
+              <td>The reproduce to cleanup loop is now the default bug-fix path.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px;">Archived directories live at <code>~/.claude/skills/_archived/</code>. Their <code>SKILL.md</code> files were renamed to <code>SKILL.md.bak</code>, so the directories are no longer registered as active skills.</p>
+      </div>
+    </section>
+
+    <section id="claude-md" aria-labelledby="claude-md-heading">
+      <h2 id="claude-md-heading">CLAUDE.md layout</h2>
+      <div class="grid-2">
+        <article class="panel">
+          <h3>Global: <code>~/.claude/CLAUDE.md</code></h3>
+          <div class="list">
+            <div class="list-item"><strong>Comments policy</strong><span>Zero comments by default.</span></div>
+            <div class="list-item"><strong>Git workflow</strong><span>Draft PRs only, no Claude co-author, CAPS prefixes.</span></div>
+            <div class="list-item"><strong>Write safety</strong><span>Ask before writing.</span></div>
+            <div class="list-item"><strong>Plan mode</strong><span>When to skip and when to enter.</span></div>
+            <div class="list-item"><strong>Skill dispatch</strong><span>Intent to skill mapping.</span></div>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Per project: <code>&lt;plugin&gt;/CLAUDE.md</code></h3>
+          <div class="list">
+            <div class="list-item"><strong>Build commands</strong><span>Project-local commands only.</span></div>
+            <div class="list-item"><strong>Architecture</strong><span>One-screen overview.</span></div>
+            <div class="list-item"><strong>Coding rules</strong><span>Hook prefix, text domain, REST namespace.</span></div>
+            <div class="list-item"><strong>Deep knowledge</strong><span>Table to <code>.claude/skills/*.md</code>.</span></div>
+            <div class="list-item"><strong>Security rules</strong><span>Project-specific when needed.</span></div>
+            <div class="list-item"><strong>Graph MCP</strong><span>Include when wired.</span></div>
+          </div>
+          <p style="margin-top:14px;">Project files: <code>fluentform</code>, <code>fluentformpro</code>, <code>fluent-player</code>, <code>fluent-player-pro</code>, <code>fluent-conversational-js</code>.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <h2>Skill files used in this flow</h2>
+    <div class="list">
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/new-feature/SKILL.md"><code>new-feature/SKILL.md</code></a></strong><span>Builds features through gated phases: align, plan, spec, build, review, ship.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/bug-fix/SKILL.md"><code>bug-fix/SKILL.md</code></a></strong><span>Fixes reported bugs or runs bug-discovery sweeps with reproduce, hypothesis, instrumentation, and regression tests.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pre-merge-review/SKILL.md"><code>pre-merge-review/SKILL.md</code></a></strong><span>Reviews branches before merge using detector passes, pattern checks, and graph context when available.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/rigorous-coding-workflow/SKILL.md"><code>rigorous-coding-workflow/SKILL.md</code></a></strong><span>Provides the underlying discipline: plan, keep context clean, capture lessons, verify, and calibrate.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/setup-code-review-graph/SKILL.md"><code>setup-code-review-graph/SKILL.md</code></a></strong><span>Wires or verifies the graph MCP so skills can query callers, dependents, impact radius, and coverage.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/cross-plugin-coordination/SKILL.md"><code>cross-plugin-coordination/SKILL.md</code></a></strong><span>Coordinates Free and Pro changes when hooks, routes, policies, assets, or shared contracts move.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/grill-with-docs/SKILL.md"><code>grill-with-docs/SKILL.md</code></a></strong><span>Aligns vocabulary and decisions against project docs before planning or building.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/design-an-interface/SKILL.md"><code>design-an-interface/SKILL.md</code></a></strong><span>Explores alternate interface or API shapes before committing to one design.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/tdd/SKILL.md"><code>tdd/SKILL.md</code></a></strong><span>Runs a red-green-refactor loop for implementation and regression protection.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pr-descriptor/SKILL.md"><code>pr-descriptor/SKILL.md</code></a></strong><span>Generates concise why-first pull request descriptions from git evidence.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/php-cs-fixer-style/SKILL.md"><code>php-cs-fixer-style/SKILL.md</code></a></strong><span>Applies the shared PHP formatting and style expectations.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/plugin-audit/SKILL.md"><code>plugin-audit/SKILL.md</code></a></strong><span>Runs deep WordPress plugin audits for security, performance, dead code, and traceability.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/pro-addon-development/SKILL.md"><code>pro-addon-development/SKILL.md</code></a></strong><span>Guides Pro addon patterns, license gates, hooks, policies, and Free-to-Pro contracts.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/improve-codebase-architecture/SKILL.md"><code>improve-codebase-architecture/SKILL.md</code></a></strong><span>Finds architectural improvements after fixes or when the code structure blocks clean work.</span></div>
+      <div class="list-item"><strong><a href="file:///Volumes/Projects/Tools/agent-skills/request-refactor-plan/SKILL.md"><code>request-refactor-plan/SKILL.md</code></a></strong><span>Turns a refactor idea into small, reviewable, low-risk steps.</span></div>
+    </div>
+    Generated 2026-05-21. Standalone reference file. Open in any browser.
+  </footer>
+</div>
+</body>
+</html>
