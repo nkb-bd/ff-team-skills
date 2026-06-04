@@ -1,136 +1,137 @@
 # agent-skills
 
-Reusable AI-agent skill packs for WordPress-focused engineering workflows at WPManageNinja.
+Personal Claude Code skill library — orchestrator workflows, review gates, and WordPress-plugin engineering patterns.
 
-## Skills in this repository
+**📖 [Skill Guide (GitHub Pages)](https://nkb-bd.github.io/agent-skills/)** — illustrated guide to every skill, when to use it, and how they chain.
+**🗺 [new-feature illustrated manual](new-feature/README.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
-| Skill | Purpose | Primary Output |
-|---|---|---|
-| `agents-onboarding` | Create or refresh repository onboarding docs for coding agents, with architecture depth and local validation focus. | `AGENTS.md` + `docs/agent-architecture.md` (or `AGENT_ARCHITECTURE.md`) |
-| `php-cs-fixer-style` | Enforce shared PHP-CS-Fixer formatting rules when editing or reviewing PHP code. | Formatter-compliant PHP changes |
-| `bug-fix` | Single canonical bug-handling skill. **Fix mode (default)**: reproduce → minimise → hypothesise → instrument → fix → regression-test. **Find mode** (`/bug-fix find`): plugin-wide bug-discovery sweep with Finder → Verifier → Feedback loop. Replaces the prior `diagnose` + `debugger` skills. | Fixed code + regression test, or `bug-discovery-report.md` |
-| `plugin-audit` | Run a deep WordPress plugin audit across security, optimization, and end-to-end traceability. | `plugin-audit.md` |
-| `pr-descriptor` | Generate concise, why-first PR descriptions from actual git changes using a project PR template. | Reviewer-ready PR markdown |
-| `pre-merge-review` | Single canonical pre-merge review. **Full mode (default)**: 7 specialised detectors in parallel (accessibility, async-races, ui-to-backend-wiring, permissions-and-capabilities, backwards-compatibility, error-handling-ux, performance-and-data-integrity) **plus** the sequential pattern passes (WP-PHP / JS / Vue / state-machine + adversarial inputs). **Light mode** (`/pre-merge-review light`): only the sequential pattern passes for tiny diffs. Replaces the prior `engineering-review` + `pr-reviewer` skills. Re-runnable to clear resolved findings. | Hosted PR-review markdown in `/Volumes/Workspace/pr-reviews/<repo>/<branch>.md` (fallback `<repo>/.review/<branch>.md`) |
-| `skill-creator` | Design and create new reusable Claude Code skills with correct frontmatter, structure, and registration. | `agent-skills/<name>/SKILL.md` |
-| `explain-this` | Teach the user to deeply understand a file, feature, or change to mastery — running understanding checklist, five-whys drilling, eli5/eli14/intern levels, restate-first, and `AskUserQuestion` quizzes (shuffled answers, reveal after submit). Inverse of `grill-me`. Doesn't end until every checklist item is verified. | Verified understanding + green checklist |
-| `rigorous-coding-workflow` | Disciplined workflow for non-trivial coding work — plan via openspec (synced with `grill-with-docs`), verify before done, capture lessons, push for elegance with calibration. Defers operational sequencing to `new-feature`. | openspec change (via `new-feature`) + `tasks/lessons.md` |
-| `new-feature` | End-to-end composite workflow for a new feature in a WP plugin. Six phases with approval gates: align (`grill-with-docs`) → plan (`openspec` + `design-an-interface`) → spec → build (`tdd` + refactor against code-quality rules) → review (`pre-merge-review`) → ship (`pr-descriptor` + `openspec archive`). Picks intensity tier (trivial → breaking) automatically. | Code merged + `openspec` archived + PR opened |
-| `setup-code-review-graph` | Wire the `code-review-graph` MCP server into a repo (project-scoped `.mcp.json`, CLAUDE.md graph block, `.gitignore` line, seed build, optional multi-repo registration). | `.mcp.json` + CLAUDE.md block + `.code-review-graph/` cache |
-| `pro-addon-development` | WPManageNinja free↔pro patterns: bootstrap contract, filter-tap surface, short-circuit pattern, license-gating, hook naming, REST namespacing, policy/asset reuse, signed-URL CDN integration. Pre-PR checklists for both sides of the pair. | Pro addon code that respects the free contract |
-| `cross-plugin-coordination` | Workflow for changing the free↔pro contract: inventory surface, decide additive/backcompat/breaking, paired PRs, joint validation, release-order coordination. | Lockstep free + pro PR pair with cross-references |
-| `positioning` | Craft a sharp positioning statement using April Dunford's 5-step "Obviously Awesome" framework — alternatives, attributes, value, segment, category. | One positioning statement + 1-liner + 30s pitch + anti-positioning list |
-| `jtbd` | Frame a product or feature using Jobs-to-be-Done. Surfaces the job, the 4 forces of switching (push/pull/anxiety/habit), and feature priority derived from the forces. | One-page JTBD brief |
-| `competitor-gap-map` | Build a competitive landscape grid on buyer-mattering axes (not features), identify defensible empty quadrants, stress-test the wedge against moat candidates. | Competitor inventory + 2x2 chart + wedge statement + 3 risks |
-| `hyperlocal-gtm` | Go-to-market playbook for hyperlocal / city-scoped consumer products in emerging markets. Wedge geography, supply-first seeding, community channels, trust scaffolding, staged metric ladder. | GTM brief |
-| `brand-identity-brief` | Lightweight visual + verbal identity brief — 3 attributes, voice rubric with calibration sentences, naming criteria, visual direction, 3 do/don't rules. | 1-page brief usable to commission a designer |
+## Active skills
 
-### Dispatch — which skill to invoke
+### Orchestrators
+
+| Skill | Purpose |
+|---|---|
+| `new-feature` | End-to-end composite workflow for a new plugin feature. Six phases with approval gates: triage (tier pick) → align (`grill-with-docs`) → plan (`openspec` + `design-an-interface`) → spec → build (`tdd`) → review (`pre-merge-review`) → ship (`pr-descriptor` + `openspec archive`). Ceremony scales with a 5-step tier system (trivial → breaking). |
+| `rigorous-coding-workflow` | The principles layer under `new-feature` — plan before executing, subagents for context hygiene, capture lessons, verify before done, push for elegance. Defers operational sequencing to `new-feature`. |
+
+### Plan & align
+
+| Skill | Purpose |
+|---|---|
+| `grill-with-docs` | Interview that stress-tests a plan against the project's domain model (CONTEXT.md, ADRs), sharpening terminology and updating docs inline as decisions crystallise. |
+| `grill-me` | Relentless plan interview until shared understanding — resolves every branch of the decision tree. No doc updates; pure alignment. |
+| `design-an-interface` | Generate 3+ radically different interface designs for a module via parallel sub-agents, each with a divergent constraint. Compare, pick, record. |
+
+### Build
+
+| Skill | Purpose |
+|---|---|
+| `tdd` | Red-green-refactor loop with the "correct seam" check — the failing test must exercise the bug pattern at the real call site. |
+| `bug-fix` | Canonical bug workflow. **Fix mode (default):** reproduce → minimise → hypothesise → instrument → fix → regression-test. **Find mode** (`/bug-fix find`): plugin-wide discovery sweep with Finder → Verifier → Feedback loop. |
+| `zoom-out` | Higher-level map of an unfamiliar code area when you're lost mid-task. |
+
+### Review & quality
+
+| Skill | Purpose |
+|---|---|
+| `pre-merge-review` | Canonical pre-merge review. **Full (default):** 7 parallel detectors (accessibility, async-races, ui-to-backend-wiring, permissions, backwards-compat, error-handling-ux, performance + data integrity) plus sequential pattern passes (WP-PHP / JS / Vue / state-machine + adversarial inputs). **Light:** sequential passes only, for tiny diffs. Re-runnable — clears resolved findings. |
+| `plugin-audit` | Deep WordPress plugin audit: security, optimization, dead code, UI-to-DB traceability. Evidence-backed findings, severity-ranked remediation backlog. |
+| `improve-codebase-architecture` | Find deepening/refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for mid-feature refactor itches. |
+| `explain-this` | Teach a file/feature/PR to mastery — teaches directly without interrogating the user first; running coverage checklist, five-whys, eli5/eli14/intern levels. Quizzes are opt-in. Ends when everything is taught, grounded in the real code. |
+
+### Ship & setup
+
+| Skill | Purpose |
+|---|---|
+| `pr-descriptor` | Why-first PR description from git evidence, filling the repo PR template. |
+| `agents-onboarding` | Create or refresh `AGENTS.md` onboarding docs for coding agents. |
+| `setup-code-review-graph` | Wire the code-review-graph MCP server into a repo (`.mcp.json`, CLAUDE.md block, seed build). |
+
+### Product
+
+| Skill | Purpose |
+|---|---|
+| `hyperlocal-gtm` | Go-to-market playbook for hyperlocal / city-scoped consumer products in emerging markets. |
+
+## Dispatch — which skill to invoke
 
 | User intent | Skill |
 |---|---|
 | "Build feature X" / "add capability Y" | `new-feature` |
-| "Fix this bug" / "diagnose this" / "debug this" / "X is broken" | `bug-fix` |
-| "Find bugs in this plugin" / "sweep for bugs" / "audit for bugs" | `bug-fix find` |
-| "Review this PR" / "is this ready to merge" / "pre-merge check" | `pre-merge-review` |
+| "Fix this bug" / "diagnose this" / "X is broken" | `bug-fix` |
+| "Find bugs in this plugin" | `bug-fix find` |
+| "Review this PR" / "is this ready to merge" | `pre-merge-review` (`light` for single-file diffs) |
 | "Deep audit" / quarterly security sweep | `plugin-audit` |
 | "Write the PR description" | `pr-descriptor` |
-| "How do we plan this rigorously" (principles, not phases) | `rigorous-coding-workflow` |
-| "Explain this code/feature" / "teach me how X works" / "walk me through this PR" | `explain-this` |
+| "Stress-test my plan" | `grill-with-docs` (with docs) / `grill-me` (without) |
+| "Design this API" / "design it twice" | `design-an-interface` |
+| "Teach me how X works" / "walk me through this PR" | `explain-this` |
+| "I'm lost in this code area" | `zoom-out` |
+| "Where can the architecture improve" | `improve-codebase-architecture` |
+
+## How the skills chain
+
+```text
+                         ┌──────────────────── new-feature ────────────────────┐
+  issue / PRD / intent → triage → grill-with-docs → openspec (+ design-an-interface)
+                          → spec → tdd → pre-merge-review → pr-descriptor → ship
+                                    │
+                                    └─ bug surfaces mid-build → bug-fix
+                                    └─ lost in the code      → zoom-out
+                                    └─ refactor itch         → improve-codebase-architecture (post-merge)
+```
+
+`new-feature` decides which of these to invoke and when; invoke the others directly for standalone work.
 
 ## Repository layout
 
 ```text
 agent-skills/
-├── agents-onboarding/          SKILL.md + agents/ + references/
-├── php-cs-fixer-style/         SKILL.md + agents/ + references/.php-cs-fixer.php
-├── bug-fix/                    SKILL.md + references/ (report-template.md, wordpress-plugin-structure-map.md)
-├── plugin-audit/               SKILL.md + agents/ + references/plugin-audit-template.md
-├── pr-descriptor/              SKILL.md + agents/ + references/pull_request_template.default.md
-├── pre-merge-review/           SKILL.md + references/
-│                                 ├── README.md
-│                                 ├── detector-accessibility.md
-│                                 ├── detector-async-races.md
-│                                 ├── detector-ui-to-backend-wiring.md
-│                                 ├── detector-permissions-and-capabilities.md
-│                                 ├── detector-backwards-compatibility.md
-│                                 ├── detector-error-handling-ux.md
-│                                 ├── detector-performance-and-data-integrity.md
-│                                 ├── patterns-wordpress-php.md
-│                                 ├── patterns-javascript.md
-│                                 ├── patterns-vue.md
-│                                 └── test-corpus.tsv
-└── (other skills…)
-
-shared/
-└── scripts/
-    └── audit-autharif.sh       Weekly drift check: confirms every category in
-                                autharif's review corpus is still owned by a
-                                pre-merge-review detector criteria pack.
-
-_archived/                      Old skills retained for reference. Their
-                                SKILL.md files have been renamed to .bak so the
-                                directories are no longer registered as skills.
-├── engineering-review/         → replaced by pre-merge-review
-├── pr-reviewer/                → replaced by pre-merge-review
-├── debugger/                   → replaced by bug-fix
-└── diagnose/                   → replaced by bug-fix
+├── <skill-name>/            SKILL.md (+ agents/, references/ when applicable)
+├── new-feature/             SKILL.md + AUDIT.md + README.html (illustrated manual)
+├── docs/                    GitHub Pages skill guide (index.html)
+├── shared/scripts/          audit-autharif.sh — weekly drift check for pre-merge-review criteria packs
+├── _flows/                  Flow definitions
+├── _inactive/               Shelved skills — unused but kept. Move back to root to re-activate.
+└── _archived/               Superseded skills (SKILL.md renamed .bak so they don't register):
+                             engineering-review + pr-reviewer → pre-merge-review
+                             debugger + diagnose → bug-fix
 ```
+
+All skill directories are self-contained real copies (former matt-skills symlinks were dereferenced) — the repo is clonable on any machine.
 
 ## Installation
 
-### Codex
+This repo **is** the live skills directory on the primary machine:
 
-1. Clone this repository.
-2. Install the skills into Codex (for example with your skill installer flow) or copy/link skill folders into `$CODEX_HOME/skills`.
-3. Start a Codex session in your target repository.
+```text
+~/.claude/skills → ~/.agents/skills → /Volumes/Projects/Tools/agent-skills
+```
 
-### Claude
-
-1. Clone this repository.
-2. Add the relevant skill files (`SKILL.md` and any needed `references/` files) to your Claude workflow context (for example, Claude Project knowledge or attached files).
-3. Instruct Claude to follow the selected `SKILL.md` as the source of truth for the task.
+On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`) to the clone. Skills in `_inactive/` and `_archived/` don't register; everything at root does.
 
 ## Usage examples
 
-### Codex examples
-
-- `Use $agents-onboarding to create or update AGENTS.md for this repo.`
-- `Use $php-cs-fixer-style to format this PHP change.`
-- `Use $bug-fix to fix the bug in resources/admin/Modules/Settings/Save.vue — submit button does nothing on the second click.`
-- `Use $bug-fix find on this plugin. Run Finder → Verifier → Feedback, keep only verifier-confirmed issues, and write bug-discovery-report.md with per-bug feedback notes.`
-- `Use $plugin-audit to audit this plugin and produce plugin-audit.md.`
-- `Use $pr-descriptor to draft a concise, why-first PR description from my current branch.`
-- `Use $pre-merge-review on the current branch. Diff against origin/dev. Run all detectors plus the sequential pattern passes; save the report to /Volumes/Workspace/pr-reviews/<repo>/<branch>.md.`
-- `Use $pre-merge-review light` — for single-file diffs; skips the parallel detectors.
-- `Use $new-feature` — full composite workflow. Asks about intensity tier, then walks align → plan → spec → build → review → ship with gates between phases.
-- `bash shared/scripts/audit-autharif.sh --since 7-days-ago` — weekly drift check: harvest autharif's comments and exit non-zero if >5% are unmapped.
-- `bash shared/scripts/audit-autharif.sh --validate` — confirm the criteria packs still classify the canonical test corpus at ≥80% accuracy.
-- `bash shared/scripts/audit-autharif.sh --diff-with-pr WPManageNinja/fluent-cart 1641` — show local-vs-autharif classification gap on a specific PR.
-
-### Claude examples
-
-- `Use the agents-onboarding workflow from the attached SKILL.md to create or update AGENTS.md and docs/agent-architecture.md.`
-- `Apply the php-cs-fixer-style SKILL.md rules to this PHP diff and return a formatter-compliant patch.`
-- `Use the bug-fix SKILL.md workflow to fix the reported bug. Default mode = fix. Add 'find' to switch to the discovery sweep.`
-- `Run the plugin-audit SKILL.md workflow and produce plugin-audit.md using the template from references/plugin-audit-template.md.`
-- `Use the pr-descriptor SKILL.md workflow to fill my pull request template from the git diff.`
-- `Use the pre-merge-review SKILL.md workflow on this branch. Run the seven detectors (accessibility, async-races, ui-to-backend-wiring, permissions-and-capabilities, backwards-compatibility, error-handling-ux, performance-and-data-integrity) plus the sequential pattern passes. Save the report to /Volumes/Workspace/pr-reviews/<repo>/<branch>.md.`
+- `Use $new-feature` — full composite workflow; announces a tier, then walks align → plan → spec → build → review → ship with gates between phases.
+- `Use $bug-fix` — "submit button does nothing on second click in Save.vue" → reproduce → fix → regression test.
+- `Use $bug-fix find` — plugin-wide sweep; only verifier-confirmed issues land in `bug-discovery-report.md`.
+- `Use $pre-merge-review` — diff against `origin/dev`; all detectors + pattern passes; re-run after fixes to mark findings `[cleared]`.
+- `Use $pre-merge-review light` — single-file diffs.
+- `Use $plugin-audit` — produce `plugin-audit.md` from the bundled template.
+- `Use $pr-descriptor` — fill the repo PR template from the actual branch diff.
+- `Use $explain-this on app/Services/Transfer/TransferService.php` — checklist-driven teaching session.
+- `bash shared/scripts/audit-autharif.sh --validate` — confirm pre-merge-review criteria packs still classify the test corpus at ≥80% (skip if the script isn't on this machine).
 
 ## Skill conventions
 
 Each skill directory contains:
 
-- `SKILL.md`: behavior contract, workflow, required outputs.
-- `agents/openai.yaml` (when applicable): UI-facing metadata (`display_name`, `short_description`, `default_prompt`).
-- `references/` (optional): templates, checklists, criteria packs, or config files used by the skill.
+- `SKILL.md` — behavior contract, workflow, required outputs.
+- `agents/openai.yaml` (when applicable) — UI-facing metadata.
+- `references/` (optional) — templates, checklists, criteria packs.
 
 ## Notes
 
-- `php-cs-fixer-style` prefers a repo-local `.php-cs-fixer.php`; otherwise it falls back to its bundled `references/.php-cs-fixer.php`.
-- `plugin-audit` is intentionally evidence-driven and uses a fixed report structure defined in `references/plugin-audit-template.md`.
-- `bug-fix` separates the **fix** loop (single known bug — reproduce → fix → regression test) from the **find** sweep (plugin-wide bug discovery via Finder → Verifier → Feedback). The find mode includes a WPManageNinja structure map at `references/wordpress-plugin-structure-map.md` and calibrates public-trigger findings to `Low-Hardening` unless concrete auth/data impact is proven.
-- `pr-descriptor` reads a repo PR template first and falls back to `references/pull_request_template.default.md`.
-- `pre-merge-review` runs seven specialised detector passes derived from the autharif review corpus (in the default `full` mode) plus the sequential pattern passes (WP-PHP, JS, Vue, state-machine + adversarial inputs). Each detector's checklist lives in its own `references/detector-*.md` pack and is independently editable. Output mirrors autharif's GitHub review shape (per-line bold-headline inline findings + summary tally). Re-runnable on the same branch to clear resolved findings.
-- `shared/scripts/audit-autharif.sh` is the regression detector for `pre-merge-review`. Run weekly to confirm every category autharif catches is still owned by a detector criteria pack; exits non-zero if >5% of new findings are unmapped. Also has `--validate` (against the 30-row test corpus) and `--diff-with-pr` (local-vs-autharif gap analysis on one PR).
-- Filenames in `references/` are in plain English so anyone scanning the directory can tell what each pack covers. The short category identifiers (`a11y`, `rbac-alignment`, etc.) stay as machine-readable labels inside the detector NDJSON output — see `pre-merge-review/references/README.md` for the mapping.
+- `pre-merge-review`'s seven detector packs live in `references/detector-*.md` and are independently editable; output mirrors the autharif GitHub review shape.
+- `bug-fix` find-mode calibrates public-trigger findings to `Low-Hardening` unless concrete auth/data impact is proven.
+- `new-feature` was audited 2026-06-04 (see `new-feature/AUDIT.md`); all findings fixed — consistent tier rules, explicit phase inputs, evidence-based tier veto, start-of-run openspec archive hygiene.

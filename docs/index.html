@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="day" data-face="sans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>agent-skills — Skill Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sans: 'Instrument Sans', sans-serif;
+  --serif: 'Newsreader', serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --size: 16px;
+}
+[data-theme="day"]   { --bg:#fdfdfc; --bg2:#f6f6f4; --ink:#1c1c1a; --ink2:#5c5c56; --ink3:#9a9a92; --hair:#e7e7e2; --accent:#1b6e4a; --accent-soft:#eef5f0; --code-bg:#f4f4f1; }
+[data-theme="sepia"] { --bg:#f7f1e5; --bg2:#efe7d7; --ink:#3a3226; --ink2:#6f6453; --ink3:#a4977f; --hair:#e2d8c4; --accent:#8a5a2b; --accent-soft:#f0e6d4; --code-bg:#efe7d5; }
+[data-theme="night"] { --bg:#16161a; --bg2:#1d1d22; --ink:#e6e6e2; --ink2:#a3a39c; --ink3:#6b6b65; --hair:#2a2a30; --accent:#6fcf9b; --accent-soft:#1e2a23; --code-bg:#202026; }
+[data-face="sans"]  { --body: var(--sans); }
+[data-face="serif"] { --body: var(--serif); }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: var(--size); line-height: 1.72;
+  transition: background .3s, color .3s;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; }
+pre { font-family: var(--mono); font-size: 13px; line-height: 1.7; background: var(--code-bg); border: 1px solid var(--hair); border-radius: 8px; padding: 20px 24px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+
+/* ---- top bar ---- */
+.bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--hair);
+}
+.brand { font-family: var(--sans); font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+.brand span { color: var(--ink3); font-weight: 400; }
+.controls { display: flex; gap: 18px; align-items: center; font-family: var(--sans); font-size: 13px; }
+.ctl { display: flex; gap: 2px; border: 1px solid var(--hair); border-radius: 7px; padding: 2px; }
+.ctl button {
+  font-family: var(--sans); font-size: 12px; border: 0; background: none; color: var(--ink2);
+  padding: 4px 10px; border-radius: 5px; cursor: pointer;
+}
+.ctl button.active { background: var(--bg2); color: var(--ink); }
+.gh { color: var(--ink2); font-size: 13px; }
+
+/* ---- shell ---- */
+.shell { display: grid; grid-template-columns: 230px minmax(0,1fr); max-width: 1060px; margin: 0 auto; gap: 56px; padding: 0 28px; }
+nav.toc {
+  position: sticky; top: 76px; align-self: start; height: calc(100vh - 100px); overflow-y: auto;
+  padding: 40px 0; font-family: var(--sans); font-size: 13px;
+}
+nav.toc .grp { color: var(--ink3); text-transform: uppercase; letter-spacing: .1em; font-size: 10.5px; margin: 22px 0 8px; }
+nav.toc .grp:first-child { margin-top: 0; }
+nav.toc a { display: block; color: var(--ink2); padding: 3.5px 0 3.5px 12px; border-left: 1px solid var(--hair); }
+nav.toc a:hover { color: var(--ink); text-decoration: none; }
+nav.toc a.on { color: var(--accent); border-left-color: var(--accent); }
+main { padding: 56px 0 140px; max-width: 660px; }
+
+/* ---- prose ---- */
+h1 { font-family: var(--sans); font-weight: 700; font-size: 38px; line-height: 1.15; letter-spacing: -.025em; margin-bottom: 14px; }
+.lede { font-size: 19px; color: var(--ink2); line-height: 1.6; margin-bottom: 8px; }
+.meta-line { font-family: var(--sans); font-size: 13px; color: var(--ink3); margin-bottom: 56px; }
+h2 { font-family: var(--sans); font-weight: 650; font-size: 24px; letter-spacing: -.015em; margin: 72px 0 6px; padding-top: 24px; border-top: 1px solid var(--hair); }
+h2 .k { color: var(--ink3); font-weight: 400; font-size: 15px; margin-right: 10px; font-family: var(--mono); }
+.h2sub { color: var(--ink2); font-size: 15px; margin-bottom: 28px; }
+p { margin-bottom: 18px; }
+
+/* ---- flow list ---- */
+.flow { border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; margin: 26px 0; font-family: var(--sans); }
+.flow-row { display: grid; grid-template-columns: 1fr 200px; gap: 16px; padding: 13px 20px; border-bottom: 1px solid var(--hair); font-size: 14.5px; align-items: baseline; }
+.flow-row:last-child { border-bottom: 0; }
+.flow-row:nth-child(odd) { background: var(--bg2); }
+.flow-row .want { color: var(--ink); }
+.flow-row .use { font-family: var(--mono); font-size: 13px; color: var(--accent); text-align: right; }
+
+/* ---- chain diagram ---- */
+.chain { margin: 28px 0; font-family: var(--mono); font-size: 13px; line-height: 2.1; }
+.chain .step { display: inline-block; border: 1px solid var(--hair); border-radius: 6px; padding: 3px 11px; background: var(--bg2); white-space: nowrap; }
+.chain .step.hot { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain .arr { color: var(--ink3); padding: 0 4px; }
+.chain .branch { display: block; color: var(--ink3); font-size: 12.5px; padding-left: 16px; }
+.chain .branch b { color: var(--ink2); font-weight: 500; }
+
+/* ---- skill entries ---- */
+.skill { margin: 0 0 44px; }
+.skill h3 { font-family: var(--mono); font-weight: 500; font-size: 17px; color: var(--ink); margin-bottom: 10px; }
+.skill h3::before { content: '$'; color: var(--ink3); margin-right: 2px; }
+.skill .what { margin-bottom: 12px; }
+.skill .row { display: grid; grid-template-columns: 64px 1fr; gap: 14px; font-size: 14.5px; margin-bottom: 7px; }
+.skill .lbl { font-family: var(--sans); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink3); padding-top: 3px; }
+.skill .when { color: var(--ink2); }
+.skill .ex {
+  font-family: var(--mono); font-size: 13px; color: var(--ink);
+  background: var(--code-bg); border: 1px solid var(--hair); border-left: 2px solid var(--accent);
+  border-radius: 6px; padding: 9px 14px;
+}
+.skill .ex::before { content: '❯ '; color: var(--accent); }
+.skill .note { font-size: 13px; color: var(--ink3); margin-top: 8px; font-style: italic; }
+
+/* ---- misc ---- */
+.tiers { font-family: var(--sans); font-size: 14px; border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; margin: 24px 0; }
+.tiers .tr { display: grid; grid-template-columns: 92px 1fr 1fr; gap: 14px; padding: 11px 18px; border-bottom: 1px solid var(--hair); }
+.tiers .tr:last-child { border-bottom: 0; }
+.tiers .tr.hd { background: var(--bg2); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink3); }
+.tiers .tn { font-weight: 600; }
+.tiers .sig { color: var(--ink2); }
+.tiers .run { font-family: var(--mono); font-size: 12.5px; color: var(--ink2); }
+.callout { border: 1px solid var(--hair); border-radius: 10px; background: var(--bg2); padding: 18px 22px; font-size: 14.5px; color: var(--ink2); margin: 26px 0; }
+.callout b { color: var(--ink); font-weight: 600; }
+footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 28px; font-family: var(--sans); font-size: 13px; color: var(--ink3); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; gap: 0; }
+  nav.toc { display: none; }
+  main { max-width: 100%; }
+  .flow-row { grid-template-columns: 1fr; gap: 4px; }
+  .flow-row .use { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">agent-skills <span>/ skill guide</span></div>
+  <div class="controls">
+    <div class="ctl" id="theme-ctl">
+      <button data-v="day">Day</button><button data-v="sepia">Sepia</button><button data-v="night">Night</button>
+    </div>
+    <div class="ctl" id="face-ctl">
+      <button data-v="sans">Sans</button><button data-v="serif">Serif</button>
+    </div>
+    <a class="gh" href="https://github.com/nkb-bd/agent-skills">GitHub ↗</a>
+  </div>
+</div>
+
+<div class="shell">
+<nav class="toc" id="toc">
+  <div class="grp">Start</div>
+  <a href="#intro">Introduction</a>
+  <a href="#pick">Which skill, when</a>
+  <a href="#chain">How they chain</a>
+  <div class="grp">Orchestrators</div>
+  <a href="#new-feature">new-feature</a>
+  <a href="#rigorous-coding-workflow">rigorous-coding-workflow</a>
+  <div class="grp">Plan &amp; align</div>
+  <a href="#grill-with-docs">grill-with-docs</a>
+  <a href="#grill-me">grill-me</a>
+  <a href="#design-an-interface">design-an-interface</a>
+  <div class="grp">Build</div>
+  <a href="#tdd">tdd</a>
+  <a href="#bug-fix">bug-fix</a>
+  <a href="#zoom-out">zoom-out</a>
+  <div class="grp">Review &amp; quality</div>
+  <a href="#pre-merge-review">pre-merge-review</a>
+  <a href="#plugin-audit">plugin-audit</a>
+  <a href="#improve-codebase-architecture">improve-codebase…</a>
+  <a href="#explain-this">explain-this</a>
+  <div class="grp">Ship &amp; setup</div>
+  <a href="#pr-descriptor">pr-descriptor</a>
+  <a href="#agents-onboarding">agents-onboarding</a>
+  <a href="#setup-code-review-graph">setup-code-review-graph</a>
+  <div class="grp">Product</div>
+  <a href="#hyperlocal-gtm">hyperlocal-gtm</a>
+</nav>
+
+<main>
+  <h1 id="intro">A field guide to the skill library</h1>
+  <p class="lede">Sixteen skills for building, reviewing, and shipping WordPress-plugin work with Claude Code — one orchestrator that sequences them, and fifteen specialists you can call directly.</p>
+  <p class="meta-line">nkb-bd/agent-skills · updated June 2026 · <a href="./new-feature.html">new-feature illustrated manual</a></p>
+
+  <h2 id="pick">Which skill, when</h2>
+  <p class="h2sub">Start from what you want, not from the skill list.</p>
+  <div class="flow">
+    <div class="flow-row"><span class="want">Build a feature or capability</span><span class="use">$new-feature</span></div>
+    <div class="flow-row"><span class="want">Fix a bug someone reported</span><span class="use">$bug-fix</span></div>
+    <div class="flow-row"><span class="want">Hunt for bugs nobody reported yet</span><span class="use">$bug-fix find</span></div>
+    <div class="flow-row"><span class="want">Check a branch before merging</span><span class="use">$pre-merge-review</span></div>
+    <div class="flow-row"><span class="want">Deep quarterly security/perf sweep</span><span class="use">$plugin-audit</span></div>
+    <div class="flow-row"><span class="want">Write the PR description</span><span class="use">$pr-descriptor</span></div>
+    <div class="flow-row"><span class="want">Stress-test a plan against the docs</span><span class="use">$grill-with-docs</span></div>
+    <div class="flow-row"><span class="want">Stress-test a plan, no docs involved</span><span class="use">$grill-me</span></div>
+    <div class="flow-row"><span class="want">Design an API before building it</span><span class="use">$design-an-interface</span></div>
+    <div class="flow-row"><span class="want">Build test-first</span><span class="use">$tdd</span></div>
+    <div class="flow-row"><span class="want">Understand unfamiliar code deeply</span><span class="use">$explain-this</span></div>
+    <div class="flow-row"><span class="want">Get un-lost in a code area</span><span class="use">$zoom-out</span></div>
+    <div class="flow-row"><span class="want">Find where the architecture can deepen</span><span class="use">$improve-codebase-architecture</span></div>
+    <div class="flow-row"><span class="want">Onboard agents to a new repo</span><span class="use">$agents-onboarding</span></div>
+    <div class="flow-row"><span class="want">Wire the code graph into a repo</span><span class="use">$setup-code-review-graph</span></div>
+    <div class="flow-row"><span class="want">Plan a hyperlocal product launch</span><span class="use">$hyperlocal-gtm</span></div>
+  </div>
+  <div class="callout"><b>Rule of thumb:</b> a typo or one-liner needs no skill at all — just commit. Anything bigger that <em>creates</em> code goes through <code>new-feature</code>; anything that <em>judges</em> code goes through <code>pre-merge-review</code> or <code>plugin-audit</code>.</div>
+
+  <h2 id="chain">How they chain</h2>
+  <p class="h2sub">The feature pipeline. <code>new-feature</code> decides which specialists to invoke and when; everything below it also works standalone.</p>
+  <div class="chain">
+    <span class="step">issue / PRD / plain words</span><span class="arr">→</span><span class="step hot">triage</span><span class="arr">→</span><span class="step">grill-with-docs</span><span class="arr">→</span><span class="step">openspec + design-an-interface</span><span class="arr">→</span><span class="step">spec</span><span class="arr">→</span><span class="step">tdd</span><span class="arr">→</span><span class="step">pre-merge-review</span><span class="arr">→</span><span class="step">pr-descriptor</span><span class="arr">→</span><span class="step hot">ship</span>
+    <span class="branch">mid-build detours — <b>bug surfaces</b> → bug-fix &nbsp;·&nbsp; <b>lost</b> → zoom-out &nbsp;·&nbsp; <b>refactor itch</b> → improve-codebase-architecture (after merge, never mid-feature)</span>
+  </div>
+  <p>Between every stage sits an approval gate: the skill shows you an artifact (problem statement, proposal, spec, review report, PR draft) and waits for your "yes". Pushing and PR-creation additionally require explicit consent <em>every time</em> — once-approved is not forever-approved.</p>
+
+  <!-- ============ ORCHESTRATORS ============ -->
+  <h2><span class="k">01</span>Orchestrators</h2>
+  <p class="h2sub">Skills that sequence other skills.</p>
+
+  <div class="skill" id="new-feature">
+    <h3>new-feature</h3>
+    <p class="what">The end-to-end feature workflow. Six phases — triage → align → plan → spec → build → review → ship — with approval gates between them. Picks an intensity tier first, so a small fix doesn't get big-feature ceremony.</p>
+    <div class="tiers">
+      <div class="tr hd"><span>Tier</span><span>Looks like</span><span>What runs</span></div>
+      <div class="tr"><span class="tn">Trivial</span><span class="sig">typo, config tweak</span><span class="run">nothing — just commit</span></div>
+      <div class="tr"><span class="tn">Small</span><span class="sig">single-file fix</span><span class="run">build + light review</span></div>
+      <div class="tr"><span class="tn">Medium</span><span class="sig">one endpoint, ~3 files</span><span class="run">plan + spec + build + light review</span></div>
+      <div class="tr"><span class="tn">Large</span><span class="sig">new module / service</span><span class="run">everything, deep review</span></div>
+      <div class="tr"><span class="tn">Breaking</span><span class="sig">API / schema change</span><span class="run">everything + post-merge audit</span></div>
+    </div>
+    <div class="row"><span class="lbl">When</span><span class="when">Starting any feature or non-trivial enhancement. Works from an issue #, a PRD, or just your own words — "we need a duplicate-form button" is a valid starting point.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $new-feature — users should be able to export entries as PDF</span></div>
+    <p class="note">Full mechanics — every gate, check, and question — in the <a href="./new-feature.html">illustrated manual</a>.</p>
+  </div>
+
+  <div class="skill" id="rigorous-coding-workflow">
+    <h3>rigorous-coding-workflow</h3>
+    <p class="what">The principles layer underneath new-feature: plan before executing, use subagents to keep context clean, capture lessons from corrections, verify before declaring done, push for elegance.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Any multi-step task that isn't a feature build — refactors, failing CI, re-attempts of work that went sideways. For features, new-feature already applies it.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $rigorous-coding-workflow — migrate the export module to the new queue API</span></div>
+  </div>
+
+  <!-- ============ PLAN ============ -->
+  <h2><span class="k">02</span>Plan &amp; align</h2>
+  <p class="h2sub">Get the thinking right before any code exists.</p>
+
+  <div class="skill" id="grill-with-docs">
+    <h3>grill-with-docs</h3>
+    <p class="what">An interview that stress-tests your plan against the project's existing domain model — CONTEXT.md terms, ADR decisions — and updates those docs inline as decisions crystallise.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Before building something that touches established domain language. Also runs automatically as new-feature's align phase.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $grill-with-docs — I want to add "form templates" but we already have "form presets"</span></div>
+  </div>
+
+  <div class="skill" id="grill-me">
+    <h3>grill-me</h3>
+    <p class="what">Pure plan interrogation — resolves every branch of the decision tree until you and the agent share one understanding. No documents touched.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">You have a design in your head and want it stress-tested before committing to it. Lighter than grill-with-docs; no docs needed.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $grill-me on my plan to cache rendered forms per-locale</span></div>
+  </div>
+
+  <div class="skill" id="design-an-interface">
+    <h3>design-an-interface</h3>
+    <p class="what">Generates three or more radically different designs for a module's interface using parallel sub-agents, each given a divergent constraint (minimize methods / maximize flexibility / optimize the common case). You compare and pick.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Before building any API or module whose shape isn't obvious. new-feature invokes it automatically for Large-tier work.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $design-an-interface for the new WebhookDispatcher service</span></div>
+  </div>
+
+  <!-- ============ BUILD ============ -->
+  <h2><span class="k">03</span>Build</h2>
+  <p class="h2sub">Writing the code, test-first, without getting lost.</p>
+
+  <div class="skill" id="tdd">
+    <h3>tdd</h3>
+    <p class="what">Red-green-refactor with a "correct seam" rule: the failing test must exercise the behavior at the real call site, not a shallower seam that gives false confidence.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Building anything testable. new-feature's entire build phase runs through it — one red-green-refactor cycle per spec scenario.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $tdd — the sanitizer should strip script tags but keep allowed HTML</span></div>
+  </div>
+
+  <div class="skill" id="bug-fix">
+    <h3>bug-fix</h3>
+    <p class="what">Two modes. <strong>Fix</strong> (default): reproduce → minimise → hypothesise → instrument → fix → regression-test — the feedback loop comes first, never hypothesize before you can reproduce. <strong>Find</strong>: a plugin-wide discovery sweep where a Finder proposes bugs, a Verifier confirms them, and only confirmed ones reach the report.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Anything broken, throwing, or behaving strangely. Use find-mode when nobody reported anything but you want to know what's lurking.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $bug-fix — duplicate entries appear when submitting with slow network</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $bug-fix find on this plugin</span></div>
+  </div>
+
+  <div class="skill" id="zoom-out">
+    <h3>zoom-out</h3>
+    <p class="what">Builds a higher-level map of the code area you're standing in — modules, flows, seams — so you can re-orient instead of wandering file to file.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Mid-task, the moment you notice you're reading files without a hypothesis. Also useful before reviewing an unfamiliar subsystem.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $zoom-out on app/Services/Payments</span></div>
+  </div>
+
+  <!-- ============ REVIEW ============ -->
+  <h2><span class="k">04</span>Review &amp; quality</h2>
+  <p class="h2sub">Judging code — before merge, after merge, and for your own understanding.</p>
+
+  <div class="skill" id="pre-merge-review">
+    <h3>pre-merge-review</h3>
+    <p class="what">The canonical branch review. Full mode runs seven parallel detectors — accessibility, async races, UI↔backend wiring, permissions, backwards-compat, error-handling UX, performance &amp; data integrity — plus sequential pattern passes (WP-PHP, JS, Vue, state-machine, adversarial inputs). Writes one re-runnable report; re-running marks fixed findings <code>[cleared]</code>.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Before pushing any branch. Use <code>light</code> for single-file diffs — it skips the parallel detectors.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $pre-merge-review — diff against origin/dev</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $pre-merge-review light</span></div>
+  </div>
+
+  <div class="skill" id="plugin-audit">
+    <h3>plugin-audit</h3>
+    <p class="what">A deep, evidence-driven audit of a whole plugin: security (severity-ranked), optimization, dead code, and end-to-end UI-to-database traceability. Produces a remediation backlog, not vibes.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Quarterly, after Breaking-tier merges, or when inheriting a codebase you don't trust yet.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $plugin-audit and produce plugin-audit.md</span></div>
+  </div>
+
+  <div class="skill" id="improve-codebase-architecture">
+    <h3>improve-codebase-architecture</h3>
+    <p class="what">Finds deepening opportunities — modules to consolidate, seams to strengthen, testability gaps — guided by the domain language in CONTEXT.md and the decisions in ADRs.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">After merge, when an area felt architecturally wrong mid-feature. Never mid-feature: new-feature explicitly defers refactor itches here.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $improve-codebase-architecture on the Transfer module</span></div>
+  </div>
+
+  <div class="skill" id="explain-this">
+    <h3>explain-this</h3>
+    <p class="what">Teaches you a file, feature, or PR until you actually own it. Starts teaching immediately — no "what do you already know?" interrogation — walking the material stage by stage with a running coverage checklist, drilling the <em>why</em> behind every decision (eli5 / eli14 / intern depth on request). Quizzes only if you ask.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Onboarding to a subsystem, studying a teammate's change before reviewing it, or any "I need to own this area" moment. For a quick "what does this line do", just ask normally.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $explain-this on the submission validation pipeline</span></div>
+  </div>
+
+  <!-- ============ SHIP ============ -->
+  <h2><span class="k">05</span>Ship &amp; setup</h2>
+  <p class="h2sub">Getting work out the door, and getting repos ready for agents.</p>
+
+  <div class="skill" id="pr-descriptor">
+    <h3>pr-descriptor</h3>
+    <p class="what">Drafts a concise, why-first PR description from the actual git diff, filling the repo's PR template (or its bundled default). Includes the <code>Closes #n</code> reference when an issue is in play.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Every PR. new-feature calls it automatically at ship time.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $pr-descriptor for the current branch</span></div>
+  </div>
+
+  <div class="skill" id="agents-onboarding">
+    <h3>agents-onboarding</h3>
+    <p class="what">Creates or refreshes a repository's AGENTS.md with high-signal onboarding guidance — architecture depth, local validation workflow, the things agents keep getting wrong without it.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">New repo, or when agent behavior on a repo varies more than it should.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $agents-onboarding to create AGENTS.md for this repo</span></div>
+  </div>
+
+  <div class="skill" id="setup-code-review-graph">
+    <h3>setup-code-review-graph</h3>
+    <p class="what">Wires the code-review-graph MCP server into a repo: project-scoped .mcp.json, CLAUDE.md instructions block, gitignore line, seed graph build. After this, agents query callers/dependents/test-coverage structurally instead of grepping.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Onboarding any repo you'll work in regularly. One-time per repo.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $setup-code-review-graph on this repo</span></div>
+  </div>
+
+  <!-- ============ PRODUCT ============ -->
+  <h2><span class="k">06</span>Product</h2>
+  <p class="h2sub">The non-engineering shelf-survivor.</p>
+
+  <div class="skill" id="hyperlocal-gtm">
+    <h3>hyperlocal-gtm</h3>
+    <p class="what">Go-to-market playbook for hyperlocal, city-scoped consumer products in emerging markets — wedge geography, supply-first seeding, community-channel distribution, trust scaffolding, staged metric ladder.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Planning a launch for a directory, marketplace, community, or local-services product.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $hyperlocal-gtm — how do we get the first 1000 users in Dhaka?</span></div>
+  </div>
+
+  <footer class="page">
+    <span><a href="https://github.com/nkb-bd/agent-skills">nkb-bd/agent-skills</a> · shelved skills live in <code>_inactive/</code></span>
+    <span><a href="./new-feature.html">new-feature manual</a> · <a href="https://github.com/nkb-bd/agent-skills/blob/main/new-feature/AUDIT.md">audit record</a></span>
+  </footer>
+</main>
+</div>
+
+<script>
+const html = document.documentElement;
+function wire(ctlId, attr) {
+  const ctl = document.getElementById(ctlId);
+  const saved = localStorage.getItem(attr);
+  if (saved) html.setAttribute(attr, saved);
+  const sync = () => ctl.querySelectorAll('button').forEach(b =>
+    b.classList.toggle('active', b.dataset.v === html.getAttribute(attr)));
+  ctl.addEventListener('click', e => {
+    if (!e.target.dataset.v) return;
+    html.setAttribute(attr, e.target.dataset.v);
+    localStorage.setItem(attr, e.target.dataset.v);
+    sync();
+  });
+  sync();
+}
+wire('theme-ctl', 'data-theme');
+wire('face-ctl', 'data-face');
+
+const links = [...document.querySelectorAll('nav.toc a')];
+const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const spy = new IntersectionObserver(es => {
+  es.forEach(e => { if (e.isIntersecting) {
+    links.forEach(l => l.classList.toggle('on', l.getAttribute('href') === '#' + e.target.id));
+  }});
+}, { rootMargin: '-20% 0px -70% 0px' });
+targets.forEach(t => spy.observe(t));
+</script>
+</body>
+</html>
