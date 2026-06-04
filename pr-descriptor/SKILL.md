@@ -20,9 +20,9 @@ Generate PR descriptions that explain why the PR is needed first, then summarize
 ## Execution Workflow
 
 1. Resolve the PR template path in this order:
-   - `.github/pull_request_template.md`
-   - `.github/PULL_REQUEST_TEMPLATE.md`
-   - `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md` (single source of truth, role-dev-lead.md §9–§11; offer to copy it into the repo's `.github/` when missing)
+   - `.claude/pr-template.md` (in-repo copy — works for every teammate's agent, no default-branch dependency)
+   - `.github/pull_request_template.md` / `.github/PULL_REQUEST_TEMPLATE.md`
+   - `/Volumes/Projects/Tools/work-flow/dev-lead-gate/pull_request_template.md` (canonical source, role-dev-lead.md §9–§11; this path exists only on this machine — offer to copy it to the repo's `.claude/pr-template.md` when missing)
 2. Determine base branch.
    - Prefer upstream merge target if it maps to `development`, `master`, or `main`.
    - Otherwise evaluate candidates in this order:
