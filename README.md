@@ -88,7 +88,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 ```text
 ff-team-skills/
 ├── <skill-name>/            SKILL.md (+ agents/, references/ when applicable)
-├── new-feature/             SKILL.md + AUDIT.md + README.html (illustrated manual)
+├── new-feature/             SKILL.md + AUDIT.md (illustrated manual lives in docs/)
 ├── docs/                    GitHub Pages skill guide (index.html)
 ├── shared/scripts/          audit-autharif.sh — weekly drift check for pre-merge-review criteria packs
 ├── _flows/                  Flow definitions
