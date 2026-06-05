@@ -3,7 +3,7 @@
 FF team Claude Code skill library — orchestrator workflows, review gates, and WordPress-plugin engineering patterns.
 
 **📖 [Skill Guide (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — illustrated guide to every skill, when to use it, and how they chain.
-**🗺 [new-feature illustrated manual](new-feature/README.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
+**🗺 [new-feature illustrated manual](https://nkb-bd.github.io/ff-team-skills/new-feature.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
 ## Active skills
 
