@@ -62,6 +62,18 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
   The miss to flag: a mutating callback with **none** of the above —
   trusting that "only our code calls this filter." Treat every mutating
   filter callback as its own trust boundary.
+- **Authorize the acted-on IDs, not just the named scope.** When a handler
+  authorizes a request-named scope (`form_id`/`list_id`/`parent_id`) but mutates
+  or reads a separate attacker-supplied array of object IDs (`entries[]`,
+  `ids[]`, `submission_ids[]`), the cap check on the scope does NOT protect the
+  IDs — that's IDOR by ID-smuggling. Either re-scope the IDs
+  (`->where('scope_id', $authorized)->whereIn('id', $ids)`) before acting, OR
+  derive authorization from the *fetched rows'* real scope. In a bulk
+  `action_type` dispatcher, **every branch must apply the identical scope
+  filter** — the classic bug is a delete branch that omits the `where('scope_id')`
+  its sibling status/favorite branches apply (fluent-forms WPScan req 11316830,
+  sibling of CVE-2026-5396). Cascading meta/detail/log deletes need the same
+  filter. When patching an authz CVE, sweep sibling action paths for this class.
 - **Auto-reject:** missing nonce check or missing capability check on admin actions
 
 ## SQL / Database

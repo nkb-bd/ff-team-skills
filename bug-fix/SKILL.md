@@ -154,6 +154,10 @@ Required before declaring done:
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
+- [ ] **Security/authz fixes only — sibling sweep done.** A vuln is almost never alone. Before declaring done, enumerate every sibling of the patched path and confirm each is safe or fixed:
+  - For an **IDOR / authorization-scope** bug (handler authorizes a request-named scope like `form_id` but acts on attacker-supplied IDs), find every branch of the same dispatcher and every other handler that reads an ID array (`entries[]`, `ids[]`, `submission_ids[]`). Confirm each re-scopes the IDs (`->where('scope_id', $x)->whereIn('id', $ids)`) or authorizes the *fetched rows'* real scope. The bug lives in the *asymmetry* between branches — the delete branch that forgot the scope filter its siblings apply.
+  - When the bug references a **known CVE**, sweep the CVE's sibling code paths explicitly; the original patch often hardened only the reported instance. (fluent-forms WPScan req 11316830 was a delete-branch sibling of CVE-2026-5396 that the original fix missed.)
+  - Static review catches at most one path at a time. For authz, add/note a runtime **authz-matrix** test seam (low-priv user × each mutating endpoint × cross-scope IDs → expect 403 / 0 rows) — that is the only thing that locks the class.
 
 **Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to `/improve-codebase-architecture` with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than when you started.
 
@@ -241,6 +245,7 @@ If the runtime cannot spawn literal sub-agents, emulate the same phases sequenti
   - Custom ACL helper → requested route/controller policy → actual `current_user_can(...)` comparison for the requested permission.
   - Shortcode attribute/source field → sanitizer/save path → final render sink (`do_shortcode`, template echo, JS `.html(...)`, modal/button builder).
   - Public object-action endpoints → resource binding check for attachment/post/draft/path/submission ownership within the current form/session/user.
+  - Bulk / `action_type` dispatchers that read an ID array (`entries[]`, `ids[]`, `submission_ids[]`) → every branch applies the same `where('scope_id', …)` filter before the IDs are used, or authorizes the fetched rows' real scope. Flag any branch (typically delete) that passes raw IDs to `whereIn('id', $ids)->delete()` while a sibling branch scopes — IDOR by ID-smuggling (fluent-forms WPScan req 11316830, sibling of CVE-2026-5396). Check cascading meta/detail/log/order deletes for the same gap.
   - Integration/webhook readers and writers → whether secrets or remote-response content are disclosed back to delegated users.
 - Reclassify each candidate as exactly one of: `Confirmed`, `Rejected`, `Needs manual verification`.
 - Add a short `Verifier note` for every candidate including the exact break point or guard that determined the verdict.

@@ -150,6 +150,74 @@ default to `get_the_ID()` and add an opt-in filter for power users;
 
 ---
 
+## Authorization scope vs. acted-on IDs (IDOR by ID-array smuggling)
+
+An endpoint that authorizes against a **scope named in the request** (a
+`form_id`, `list_id`, `project_id`, `parent_id`) but then **acts on a separate
+array of attacker-supplied object IDs** (`entries[]`, `ids[]`, `submission_ids[]`)
+is a confused deputy. The policy validates the *scope you named*; the mutation
+hits the *IDs you sent*. A user legitimately scoped to Form A passes the policy,
+then smuggles Form B's IDs in the array and the unscoped query deletes/updates
+them. Sanitization does not help — the IDs are well-formed integers; the cap
+check does not help — it passed against the authorized scope.
+
+This is the **branch-asymmetry** failure: when a handler dispatches on an
+`action_type`, the *individual branches* often diverge. One branch builds a
+scoped query (`->where('form_id', $formId)->whereIn('id', $ids)`) so smuggled
+IDs resolve to zero rows; a sibling branch (often the delete path) passes the
+raw `$ids` to an unscoped `whereIn('id', $ids)->delete()`. They must be
+symmetric. The detector MUST compare every branch of the same dispatcher against
+each other, not just review each in isolation — the bug lives in the *difference*.
+
+**The two correct patterns (use one):**
+
+1. **Re-scope the IDs to the authorized scope before acting.** Resolve
+   `$ownedIds = Model::where('scope_id', $authorizedScope)->whereIn('id', $ids)->pluck('id')`
+   and operate only on `$ownedIds`. Smuggled foreign IDs drop out by
+   construction. Apply the **same** scope filter to every cascading
+   meta/detail/log/order delete, not just the parent table.
+2. **Authorize the targets, not the label.** Fetch the rows first, derive the
+   scope from the *fetched records'* real `scope_id`, and authorize each
+   distinct scope (`Acl::hasPermission($cap, $row->form_id)`), rejecting if any
+   is unauthorized. Never trust a request-named scope as the authorization
+   subject when the action targets a different ID set.
+
+**Smell patterns:**
+- A bulk/`action_type` handler where the status/favorite branch uses
+  `->where('scope_id', $x)->whereIn('id', $ids)` but the delete branch uses
+  `Model::whereIn('id', $ids)->delete()` with no `scope_id` filter
+- `deleteEntries($requestIds, $formId)` where `$formId` is only used for
+  logging/hooks, never as a query constraint
+- Cascading deletes (`Meta::whereIn('submission_id', $ids)`,
+  `OrderItem::whereIn('submission_id', $ids)`) that re-use the raw smuggled IDs
+- A fix that hardened the policy's scope resolution (e.g. a prior CVE) while a
+  sibling action path still acts on unscoped IDs — **always sweep siblings of a
+  patched authz CVE**
+
+**Required pattern:** every branch of a bulk/dispatch handler enforces an
+**identical** scope constraint, OR the handler authorizes against the fetched
+targets' real scope. A count assertion (`count($found) === count($requested)`,
+as `SubmissionPrint` does) is an acceptable stricter variant for read paths —
+it throws if any requested ID is out of scope.
+
+**Corpus evidence:**
+- `fluent-forms` WPScan req 11316830 (sibling of **CVE-2026-5396**) —
+  `SubmissionService::handleBulkActions` delete branch
+  (`app/Services/Submission/SubmissionService.php`): status/favorite branches
+  re-scoped by `form_id` (line ~340), the `other.delete_permanently` branch
+  passed raw `entries[]` to `Submission::remove()` →
+  `whereIn('id', $ids)->delete()` with no `form_id` filter. A Manager scoped to
+  specific forms could permanently delete any form's entries by smuggling IDs
+  under an authorized `form_id`. The sibling `PaymentEntries::handleBulkAction`
+  was *not* vulnerable — it used pattern 2 (`authorizeTransactionForms` on the
+  fetched rows' real form_ids).
+
+**Severity:** **Blocking** for cross-scope delete/update via smuggled IDs;
+**High** for cross-scope read (export/print) where one branch lacks the scope
+filter; **High** when the parent table is scoped but a cascading delete is not.
+
+---
+
 ## Mutating hook callbacks without an authorization gate
 
 A callback registered with `add_filter()` or `add_action()` that mutates
@@ -261,6 +329,15 @@ When this criteria reference is loaded, the detector MUST:
    Do NOT classify these as "no regression" purely because the capability
    needed to reach the handler is unchanged — that lens misses minimum-exposure
    violations. Ask: "does this let lower-trust input choose what gets read?"
+7b. **For every bulk / `action_type` dispatch handler that reads an array of
+   object IDs from the request** (`entries`, `ids`, `submission_ids`, `entry_ids`)
+   and mutates or reads by those IDs: apply the **Authorization scope vs.
+   acted-on IDs** rule. Enumerate *all* branches of the dispatcher and diff their
+   query scoping against each other — if any branch (typically delete) omits the
+   `scope_id` (`form_id`/`list_id`/`parent_id`) filter that a sibling branch
+   applies, emit a finding. Trace cascading deletes (meta/details/logs/order)
+   for the same missing scope. When the diff touches a known authz CVE area,
+   explicitly sweep sibling code paths for the same class.
 8. Default severity: **Blocking** for UI-narrower-than-API drift (escalation);
    **Blocking** for arbitrary cross-scope read of stored data via attacker-
    controlled keys; **High** for UI-broader-than-API (UX); **High** for missing
