@@ -163,6 +163,9 @@ design-an-interface). Wait for "yes".
 2. Write `design.md`:
    - Context, Goals/Non-Goals, Decisions (with alternatives + rationale),
      Risks/Trade-offs, Migration Plan, Open Questions
+   - **Ground every API-dependent decision** via **`$source-driven-development`** before writing it
+     down. Any WPFluent/Vidstack/hls.js/Gutenberg/WP-core behavior the design relies on must be
+     verified against the vendored source or official docs, not memory. Tag anything still unverified.
 3. Write `tasks.md`:
    - Numbered groups (`## 1. Setup`, `## 2. Core implementation`)
    - Tasks as `- [ ] N.M description`
@@ -171,6 +174,12 @@ design-an-interface). Wait for "yes".
 
 **Gate**: show spec + tasks. Wait for "yes".
 
+**Breaking tier — doubt before the gate.** If Phase 0 classed this **Breaking** (API change,
+schema migration, removed feature, public hook-contract change), run **`$doubt-driven-development`**
+on the core decision *before* presenting the gate. Its CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
+loop spawns a fresh-context skeptic to refute the design; carry any accepted-doubt mitigations into
+`design.md` and `tasks.md`. A Breaking spec that hasn't survived the doubt loop is not ready to gate.
+
 **Gate batching (optional):** working solo on a well-understood feature, you
 may present the Phase 2 and Phase 3 gates together (proposal + spec + tasks,
 one "yes"). Never batch the Phase 1, Phase 5, or Phase 6 gates — alignment,
@@ -178,6 +187,11 @@ pre-push, and PR consent always stand alone. Rubber-stamped gates are worse
 than no gates.
 
 ## Phase 4 — Build (always; ~time varies)
+
+**Before coding against any external API**, verify it with **`$source-driven-development`** — the exact
+WPFluent/Vidstack/hls.js/Gutenberg/WP-core signature, event name, or hook contract, checked against the
+vendored source (the version this repo actually ships) or official docs. Do not write against a
+remembered API. This is where most confident-but-wrong code originates.
 
 Follow **`$tdd`** (matt) red-green-refactor for each scenario:
 
@@ -244,6 +258,26 @@ PHP Fatal `Class "X\Y\Z" not found` even though the file exists and `php -l`
 passes. Verify with `grep <ClassName> vendor/composer/autoload_classmap.php`
 before declaring the feature done.
 
+### `/build auto` — autonomous task stepping (opt-in)
+
+Invoked as `$new-feature` then "build auto", or when the user says "build it out" / "run it
+autonomously". After the Phase 3 gate is approved, step through `tasks.md` **one task at a time**
+without pausing for approval *between* tasks. Every task still gets the full loop — `$tdd`
+red-green-refactor, then commit as its own atomic checkpoint. Autonomy removes the manual stepping,
+never the discipline.
+
+**Pause and hand back to the user when:**
+- A test can't be greened in one red-green cycle → stop, surface the failure, don't paper over it.
+- The next task requires an **irreversible or high-stakes decision** (schema change, public
+  hook-contract change, capability change, deleting code you didn't write) → run
+  **`$doubt-driven-development`** on it and present the go/no-go before proceeding.
+- An API behavior is unverified → resolve via **`$source-driven-development`** before coding, or
+  pause if it can't be grounded.
+- A new PHP class was created → run `composer dump-autoload` (see below) before the next task.
+
+Never auto-`git push`. `/build auto` commits locally; the Phase 5 review and Phase 6 push gates
+still stand alone.
+
 If a bug surfaces during dev, invoke **`$bug-fix`** — build the
 feedback loop FIRST. Do not hypothesize before you can reproduce.
 
@@ -277,6 +311,11 @@ Pick intensity:
 If pre-merge-review flags a category you don't fully understand, `$zoom-out`
 (if available; otherwise map the area manually) to see how it fits the broader
 codebase before changing the code.
+
+If a review finding is **high-stakes and the fix itself is non-trivial or irreversible** (reworking a
+migration, changing a hook contract to resolve a back-compat flag), run
+**`$doubt-driven-development`** on the proposed fix before applying it — a rushed fix to a serious
+finding is how the second bug ships.
 
 **Gate**: show the report. Wait for "yes" before pushing.
 

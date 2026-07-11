@@ -27,6 +27,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | Skill | Purpose |
 |---|---|
 | `tdd` | Red-green-refactor loop with the "correct seam" check — the failing test must exercise the bug pattern at the real call site. |
+| `source-driven-development` | Ground every framework claim (WPFluent / Vidstack / hls.js / Gutenberg / WP core) in the vendored source or official docs before asserting it; tag anything unverified `UNVERIFIED:`. `new-feature` calls it in spec + build. |
 | `bug-fix` | Canonical bug workflow. **Fix mode (default):** reproduce → minimise → hypothesise → instrument → fix → regression-test. **Find mode** (`/bug-fix find`): plugin-wide discovery sweep with Finder → Verifier → Feedback loop. |
 | `zoom-out` | Higher-level map of an unfamiliar code area when you're lost mid-task. |
 
@@ -35,6 +36,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | Skill | Purpose |
 |---|---|
 | `pre-merge-review` | Canonical pre-merge review. **Full (default):** 7 parallel detectors (accessibility, async-races, ui-to-backend-wiring, permissions, backwards-compat, error-handling-ux, performance + data integrity) plus sequential pattern passes (WP-PHP / JS / Vue / state-machine + adversarial inputs). **Light:** sequential passes only, for tiny diffs. Re-runnable — clears resolved findings. |
+| `doubt-driven-development` | Adversarial fresh-context review for high-stakes / irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic to refute. `new-feature` calls it at the Breaking-tier spec gate, in `/build auto`, and on non-trivial review fixes. |
 | `plugin-audit` | Deep WordPress plugin audit: security, optimization, dead code, UI-to-DB traceability. Evidence-backed findings, severity-ranked remediation backlog. |
 | `improve-codebase-architecture` | Find deepening/refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for mid-feature refactor itches. |
 | `explain-this` | Teach a file/feature/PR to mastery — teaches directly without interrogating the user first; running coverage checklist, five-whys, eli5/eli14/intern levels. Quizzes are opt-in. Ends when everything is taught, grounded in the real code. |
@@ -68,6 +70,8 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | "Teach me how X works" / "walk me through this PR" | `explain-this` |
 | "I'm lost in this code area" | `zoom-out` |
 | "Where can the architecture improve" | `improve-codebase-architecture` |
+| "Is this safe to ship" / "second-guess this decision" | `doubt-driven-development` |
+| "Verify how this API behaves" / "check the docs before coding" | `source-driven-development` |
 
 ## How the skills chain
 
@@ -75,9 +79,12 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
                          ┌──────────────────── new-feature ────────────────────┐
   issue / PRD / intent → triage → grill-with-docs → openspec (+ design-an-interface)
                           → spec → tdd → pre-merge-review → pr-descriptor → ship
-                                    │
+                                    │  (spec grounds APIs via source-driven-development;
+                                    │   Breaking-tier decisions pass doubt-driven-development)
                                     └─ bug surfaces mid-build → bug-fix
                                     └─ lost in the code      → zoom-out
+                                    └─ unverified API claim  → source-driven-development
+                                    └─ irreversible decision → doubt-driven-development
                                     └─ refactor itch         → improve-codebase-architecture (post-merge)
 ```
 

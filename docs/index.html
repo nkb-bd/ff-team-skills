@@ -192,10 +192,12 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
   <a href="#design-an-interface">design-an-interface</a>
   <div class="grp">Build</div>
   <a href="#tdd">tdd</a>
+  <a href="#source-driven-development">source-driven-development</a>
   <a href="#bug-fix">bug-fix</a>
   <a href="#zoom-out">zoom-out</a>
   <div class="grp">Review &amp; quality</div>
   <a href="#pre-merge-review">pre-merge-review</a>
+  <a href="#doubt-driven-development">doubt-driven-development</a>
   <a href="#plugin-audit">plugin-audit</a>
   <a href="#improve-codebase-architecture">improve-codebase…</a>
   <a href="#explain-this">explain-this</a>
@@ -209,8 +211,8 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
 
 <main>
   <h1 id="intro">A field guide to the skill library</h1>
-  <p class="lede">Sixteen skills for building, reviewing, and shipping WordPress-plugin work with Claude Code — one orchestrator that sequences them, and fifteen specialists you can call directly.</p>
-  <p class="meta-line">nkb-bd/ff-team-skills · updated June 2026 · <a href="./new-feature.html">new-feature illustrated manual</a></p>
+  <p class="lede">Eighteen skills for building, reviewing, and shipping WordPress-plugin work with Claude Code — one orchestrator that sequences them, and seventeen specialists you can call directly.</p>
+  <p class="meta-line">nkb-bd/ff-team-skills · updated July 2026 · <a href="./new-feature.html">new-feature illustrated manual</a></p>
 
   <h2 id="pick">Which skill, when</h2>
   <p class="h2sub">Start from what you want, not from the skill list.</p>
@@ -225,6 +227,8 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <div class="flow-row"><span class="want">Stress-test a plan, no docs involved</span><span class="use">$grill-me</span></div>
     <div class="flow-row"><span class="want">Design an API before building it</span><span class="use">$design-an-interface</span></div>
     <div class="flow-row"><span class="want">Build test-first</span><span class="use">$tdd</span></div>
+    <div class="flow-row"><span class="want">Verify how an API behaves before coding</span><span class="use">$source-driven-development</span></div>
+    <div class="flow-row"><span class="want">Second-guess a high-stakes / irreversible call</span><span class="use">$doubt-driven-development</span></div>
     <div class="flow-row"><span class="want">Understand unfamiliar code deeply</span><span class="use">$explain-this</span></div>
     <div class="flow-row"><span class="want">Get un-lost in a code area</span><span class="use">$zoom-out</span></div>
     <div class="flow-row"><span class="want">Find where the architecture can deepen</span><span class="use">$improve-codebase-architecture</span></div>
@@ -238,7 +242,7 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
   <p class="h2sub">The feature pipeline. <code>new-feature</code> decides which specialists to invoke and when; everything below it also works standalone.</p>
   <div class="chain">
     <span class="step">issue / PRD / plain words</span><span class="arr">→</span><span class="step hot">triage</span><span class="arr">→</span><span class="step">grill-with-docs</span><span class="arr">→</span><span class="step">openspec + design-an-interface</span><span class="arr">→</span><span class="step">spec</span><span class="arr">→</span><span class="step">tdd</span><span class="arr">→</span><span class="step">pre-merge-review</span><span class="arr">→</span><span class="step">pr-descriptor</span><span class="arr">→</span><span class="step hot">ship</span>
-    <span class="branch">mid-build detours — <b>bug surfaces</b> → bug-fix &nbsp;·&nbsp; <b>lost</b> → zoom-out &nbsp;·&nbsp; <b>refactor itch</b> → improve-codebase-architecture (after merge, never mid-feature)</span>
+    <span class="branch">mid-build detours — <b>bug surfaces</b> → bug-fix &nbsp;·&nbsp; <b>lost</b> → zoom-out &nbsp;·&nbsp; <b>unverified API</b> → source-driven-development &nbsp;·&nbsp; <b>irreversible decision</b> → doubt-driven-development &nbsp;·&nbsp; <b>refactor itch</b> → improve-codebase-architecture (after merge, never mid-feature)</span>
   </div>
   <p>Between every stage sits an approval gate: the skill shows you an artifact (problem statement, proposal, spec, review report, PR draft) and waits for your "yes". Pushing and PR-creation additionally require explicit consent <em>every time</em> — once-approved is not forever-approved.</p>
 
@@ -305,6 +309,13 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <div class="row"><span class="lbl">Example</span><span class="ex">Use $tdd — the sanitizer should strip script tags but keep allowed HTML</span></div>
   </div>
 
+  <div class="skill" id="source-driven-development">
+    <h3>source-driven-development</h3>
+    <p class="what">Grounds every framework claim in an authoritative source before you assert it — the WPFluent / Vidstack / hls.js / Gutenberg / WP-core signature or contract, checked against the vendored source (the version this repo actually ships) or the official docs, never memory. Anything you can't ground gets an explicit <code>UNVERIFIED:</code> tag instead of a silent guess.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Writing code against a library API, or debugging a "the framework should do X" hypothesis. new-feature calls it in the spec phase and before any build step that touches an external API.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $source-driven-development — confirm the vidstack event fires before loadedmetadata</span></div>
+  </div>
+
   <div class="skill" id="bug-fix">
     <h3>bug-fix</h3>
     <p class="what">Two modes. <strong>Fix</strong> (default): reproduce → minimise → hypothesise → instrument → fix → regression-test — the feedback loop comes first, never hypothesize before you can reproduce. <strong>Find</strong>: a plugin-wide discovery sweep where a Finder proposes bugs, a Verifier confirms them, and only confirmed ones reach the report.</p>
@@ -330,6 +341,13 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <div class="row"><span class="lbl">When</span><span class="when">Before pushing any branch. Use <code>light</code> for single-file diffs — it skips the parallel detectors.</span></div>
     <div class="row"><span class="lbl">Example</span><span class="ex">Use $pre-merge-review — diff against origin/dev</span></div>
     <div class="row"><span class="lbl">Example</span><span class="ex">Use $pre-merge-review light</span></div>
+  </div>
+
+  <div class="skill" id="doubt-driven-development">
+    <h3>doubt-driven-development</h3>
+    <p class="what">Adversarial fresh-context review for the calls that are expensive to reverse. Runs a CLAIM → EXTRACT → DOUBT → RECONCILE → STOP loop: state the decision as one falsifiable sentence, list its load-bearing assumptions, then spawn a clean-context skeptic whose only job is to refute them. Surviving doubts are resolved or explicitly accepted before an explicit go / no-go.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Before a schema migration, a public hook-contract change, a capability change, deleting code you didn't write, or any security-sensitive call. new-feature invokes it at the Breaking-tier spec gate, inside /build auto, and on non-trivial review fixes. Skip for reversible, low-blast-radius edits.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $doubt-driven-development — is renaming this filter's third arg safe for shipped addons?</span></div>
   </div>
 
   <div class="skill" id="plugin-audit">
