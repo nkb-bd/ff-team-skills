@@ -1,19 +1,22 @@
 ---
-name: release-bump
+name: release
 description: >
-  Bump the version of a WordPress plugin (or a paired free/pro plugin pair) and
-  add a changelog entry in lockstep. Handles plugin-header Version, the
-  in-code VERSION constant, readme.txt Stable tag, and the changelog block.
-  Performs pre-flight consistency and safety checks before editing so a stale
-  or skewed source state cannot silently produce a bad release.
+  Cut a complete WordPress plugin release: bump the version (plugin-header
+  Version, the in-code VERSION constant, readme.txt Stable tag) in lockstep,
+  generate the changelog from EVERY user-facing commit since the last release
+  TAG, build the distribution zip via the repo build script, and create the
+  annotated release tag. Pre-flight consistency and safety checks fail loudly
+  so a stale or partial release cannot silently ship. Supports paired free/pro
+  plugins.
 when_to_use: >
-  When the user wants to cut a new release of a WordPress plugin —
-  "bump to X.Y.Z", "release 6.2.4", "prep the release", "version bump",
-  "update changelog", "publish a new version". Especially useful for the
-  FluentForm free + pro pair (or FluentPlayer, FluentCRM, FluentCommunity)
-  where the two plugin versions must move together.
+  When the user wants to cut or prep a release of a WordPress plugin —
+  "bump to X.Y.Z", "release X.Y.Z", "prep the release", "version bump",
+  "update changelog", "build the release", "tag the release", "publish a new
+  version". Especially useful for the FluentForm free + pro pair (or
+  FluentPlayer, FluentCRM, FluentCommunity) where the two plugin versions must
+  move together.
 context: fork
-allowed-tools: Read Edit Write Bash(git *) Bash(grep *) Bash(rg *) Bash(gh *)
+allowed-tools: Read Edit Write Bash(git *) Bash(grep *) Bash(rg *) Bash(gh *) Bash(sh *) Bash(npm *) Bash(node *)
 effort: medium
 ---
 
@@ -134,16 +137,36 @@ Insert the new entry **immediately after** the `== Changelog ==` line (or above 
 
 ---
 
-## Step 3 — Derive changelog entries from git log
+## Step 3 — Derive changelog entries from every commit since the last TAG
 
-When the operator does not supply entries manually, derive them:
+The boundary is the **last release tag**, NOT the last release commit. Tags are
+the durable release marker; keying off the bump commit silently drops anything
+that landed after it. **Always enumerate `lastTag..HEAD` and confirm the count.**
 
 ```bash
-# Find the commit where the current version was bumped — its parent is the last release point.
-last_bump_sha=$(git log --grep="Bump\|RELEASE:" --grep="changelog" -i --all-match --format=%H -n 1)
-# Fallback: search for the previous version string in readme.txt history.
-git log --oneline "${last_bump_sha}..HEAD"
+# The last release tag (e.g. 6.2.4). Confirm it is the version you expect.
+last_tag=$(git describe --tags --abbrev=0 2>/dev/null)
+echo "Last release tag: ${last_tag:-<none — fall back to previous bump commit>}"
+
+# Every commit since that tag — this is the full candidate set. Count it.
+git log --oneline "${last_tag}..HEAD"
+git rev-list --count "${last_tag}..HEAD"
+
+# Objectively classify each: did it touch user-facing code or internal-only?
+for sha in $(git rev-list "${last_tag}..HEAD"); do
+  files=$(git show --stat --format="" --name-only "$sha")
+  if echo "$files" | grep -qE '^(app/|resources/|boot/|fluentform\.php)'; then
+    echo "USER  $(git log -1 --format=%s "$sha")"
+  else
+    echo "skip  $(git log -1 --format=%s "$sha")"
+  fi
+done
 ```
+
+A commit that touches `app/`/`boot/` only via phpcs annotations, comments, or a
+trivial copy/string tweak is still **internal** — open its diff and confirm the
+change is user-visible behavior before keeping it. (The classifier flags such
+commits as USER; the operator demotes them on inspection.)
 
 Filter out commits that should never go into a changelog:
 
