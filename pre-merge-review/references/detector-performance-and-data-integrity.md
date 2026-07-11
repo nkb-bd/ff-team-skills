@@ -20,14 +20,16 @@ in PHP.
 - `array_map(fn($id) => $wpdb->get_row(...), $ids)`
 - `$contacts->map(fn($c) => $c->customFields()->get())` without `with('customFields')`
 - `foreach ($products as $p) { $p->categories(); $p->gallery(); }` — two N+1s in one loop
+- **Helper-indirection:** `foreach ($forms as $form) { $rows[] = ['entries' => Helper::entryCount($form->id)]; }` — the loop body contains no query token at all; the `COUNT(*)` lives inside the helper. Token-grepping the loop body misses this entirely.
 
-**Required pattern:** Eloquent `with()`, raw SQL `IN()`, or `SELECT FROM ... WHERE id IN (...)` + PHP-side `array_column` indexing.
+**Required pattern:** Eloquent `with()`, raw SQL `IN()`, or `SELECT FROM ... WHERE id IN (...)` + PHP-side `array_column` indexing. For helper-indirection: a batch variant of the helper (`entryCounts(array $ids)` → one `GROUP BY` query, map results to rows).
 
 **Corpus evidence:**
 - "N+1 variation selects during backfill" (`fluent-cart#1647`, `ProductVariationMigrator.php`)
 - "Per-product taxonomy and gallery lookups during export" (`fluent-cart#1658`, `ProductController.php:203`)
 - "Bulk contact import performs repeated per-row lookups" (`fluent-crm#1826`, `ContactTools.php:626`)
 - "Campaign list computes stats with per-row aggregate queries" (`fluent-crm#1826`, `CampaignTools.php:66`)
+- "N+1 entry count queries in list-forms" (`fluentform#1011`, `FormTools.php:190`) — `FormAccess::entryCount($form->id)` per row; missed by this detector across three runs because the query was one helper-call deep and the loop body matched no query token
 
 ---
 
@@ -174,6 +176,52 @@ or add a UNIQUE constraint to the schema. The single-record path is silently wro
 
 ---
 
+## Defaulted identifier reused as storage key
+
+Code that generates artifacts (forms, feeds, configs, schemas) from component
+templates/defaults, where some template field doubles as a **storage key**
+downstream (submission response key, meta key, array index, slug). If the
+generator doesn't supply that identifier, every instance of the same template
+inherits the same default — and the first time a consumer builds two of the
+same type, their stored data collides silently (last write wins).
+
+The local diff looks complete: it passes type + label, the save pipeline
+accepts it, a single-field test works. The bug only appears by asking "which
+of these template fields is a KEY, and who guarantees it's unique per
+instance?" — that's domain knowledge about the storage layer, not visible in
+the generator's own file.
+
+**Smell patterns:**
+- A create/builder API forwarding `type` + `settings` into a template-merge
+  pipeline (`wp_parse_args($field, $template)`) without setting the template's
+  `name`/`key`/`slug` attribute
+- Downstream storage keyed by that attribute (`$responses[$field['name']]`,
+  `update_post_meta($id, $field['key'], ...)`)
+- A fallback like `$name = $input['name'] ?? $template['name']` with no
+  uniqueness pass over the generated collection
+
+**Required pattern:** the generator owns key uniqueness — derive from a
+caller-supplied label/slug, fall back to the default, and uniquify across the
+generated set (`_1`, `_2` suffixes) before save.
+
+**Detection rule:** for every changed create/generate/build path that merges
+caller input over component defaults, list the template attributes that act as
+keys anywhere downstream (grep consumers for indexing by that attribute), and
+verify the generator uniquifies them per instance.
+
+**Severity:** **Blocking** when the colliding key stores user-submitted data.
+
+**Corpus evidence:**
+- "MCP-created repeated field types reuse duplicate storage keys"
+  (`fluentform#1011`, `FormTools.php:123`) — create-form passed type + label
+  only; `AiFormBuilder` kept the component-default `attributes.name`, so two
+  text fields shared the `input_text` response key and submitted values
+  overwrote each other. Missed because the generator file read fine in
+  isolation — the key-ness of `attributes.name` lives in the submission
+  storage layer.
+
+---
+
 ## Meta uniqueness not enforced when assumed
 
 Code that reads a meta key and treats it as a single value while writing the same
@@ -204,6 +252,40 @@ A scheduling / range / window input that accepts `start` and `end` without check
 
 **Corpus evidence:**
 - "Range schedule allows inverted date ranges" (`fluent-crm#1826`, `CampaignTools.php:892`)
+
+---
+
+## Caller-controlled range without a span clamp
+
+A query bounded by caller-supplied range parameters (`date_from`/`date_to`,
+timestamps, id ranges, offsets) is NOT bounded work just because it has `where`
+clauses. If nothing limits the **span** of the range, the caller controls scan
+size and output size — a 10-year window over a high-volume table forces a large
+scan/aggregate and (for `GROUP BY` day/bucket queries) an unbounded number of
+output rows. The unbounded-query rule above misses this because the query
+*does* have `->where()` constraints.
+
+**Smell patterns:**
+- `where('created_at', '>=', $from)->where('created_at', '<=', $to)` where
+  `$from`/`$to` come from request/tool params and no maximum window is enforced
+- `selectRaw('DATE(created_at) as day, COUNT(*)')->groupBy('day')` whose bucket
+  count is caller-controlled (one row per day in the requested window)
+- An export/report/trend endpoint clamping `per_page` carefully while leaving
+  the date window unclamped — same class of input, inconsistent treatment
+
+**Required pattern:** clamp the span the same way `per_page` is clamped: define
+a max window (e.g. 366 days), validate after defaulting, return the API's
+invalid-param error when exceeded. Mention the cap in the param description so
+callers (especially AI agents) self-correct.
+
+**Severity:** **Medium** on authenticated/admin surfaces, **High** when the
+endpoint is reachable by low-privilege roles or the table is unbounded-growth
+(submissions, orders, logs).
+
+**Corpus evidence:**
+- "Unbounded trend date range" (`fluentform#1011`, `ReportTools.php:136`) —
+  get-submissions-trend accepted any valid date_from/date_to span; the review
+  validated date *format* and *order* but never asked "how wide can this get?"
 
 ---
 
@@ -306,6 +388,13 @@ When this criteria reference is loaded, the detector MUST:
 1. For every changed PHP file, grep for the loop-with-query pattern: `foreach (`,
    `while (`, `array_map(` containing `->get()`, `->all()`, `->first()`,
    `->find()`, `$wpdb->get_`, or any `Model::` static call. Emit N+1 findings.
+1a. **Indirection follow-through.** For every *other* function/method call inside
+   a loop body (helper statics, `$this->` methods, service calls), resolve the
+   callee when it is defined in the changed files or the same module and check
+   its body for the query tokens from rule 1. One level of indirection is
+   mandatory; two when the intermediate is a trivial delegator. A loop body with
+   zero query tokens is NOT evidence of no N+1 (corpus: `fluentform#1011`
+   `FormAccess::entryCount` — missed three runs in a row by token-grepping).
 2. For every `->get()` / `->all()` / `->find()` without a preceding `->where()` or
    `->limit()` chain, emit unbounded-query finding.
 2a. For every `whereIn(...)->get()`, trace the source of the `IN` list. If it
@@ -333,6 +422,12 @@ When this criteria reference is loaded, the detector MUST:
 5. For every `Schedule::`, `DateRange::`, `Window::`, or similar create call with
    `start` + `end` args, verify a range-validation guard exists. If not, emit
    inverted-range finding.
+5a. For every query whose `where` bounds come from caller-supplied range params
+   (`date_from`/`date_to`, `start`/`end`, timestamps), verify a **maximum span**
+   is enforced after defaulting (not just format/order validation). Missing →
+   emit range-span finding (severity per the "Caller-controlled range without a
+   span clamp" rule). `GROUP BY` time-bucket queries get this check even when
+   every other bound is present.
 6. For every multi-table state change in a controller (delete + update, insert + update),
    verify a `DB::transaction(` / `$wpdb->query('START TRANSACTION')` wraps it. If
    not, emit atomicity finding.

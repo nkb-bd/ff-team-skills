@@ -278,6 +278,71 @@ cache state but still trusts the caller.
 
 ---
 
+## Default-grant fallback in a permission check (allow-by-default authorization)
+
+Applies to **any** plugin's authorization helper (custom ACL class, policy
+method, or raw `current_user_can` wrapper). A permission check that resolves
+access through a **fallback branch that grants** — "if the specific capability
+check fails, fall back to a broader role/flag and allow" — is a confused deputy
+in the *default direction*. The danger is not the explicit `deny`; it's the
+branch that silently *upgrades* a restricted principal to a broader grant. When
+the fallback is applied to **everyone** instead of only the population it was
+designed for, a deliberately-restricted user (e.g. one scoped to "view" only)
+whose *role* also carries a broad delegation re-acquires the access the admin
+tried to remove. Sanitization and nonces are irrelevant — the request is
+authentic; the auth logic itself over-grants.
+
+This is the **fallback-scope** failure: the fallback must be gated to the exact
+population it models. For every `$x = <specific-check> ?: <broader-fallback>`
+or `if (!$allowed && $broaderGrant) $allowed = true;` in an auth helper, ask:
+*who is `$broaderGrant` meant to cover, and does an explicitly-restricted user
+slip into that set?* Two access **sources** (a per-user grant vs. a
+role/group-delegated grant) must never be OR'd into a single "any access → full
+access" decision.
+
+**Smell patterns:**
+- A broad capability/role lookup computed **unconditionally**, then used to
+  satisfy *any* scoped permission (`if (!$allowed && $broadGrant) $allowed = true;`)
+  — a per-user-restricted principal who also holds the role gets every scoped cap
+- A fallback grant with **no guard distinguishing the two access sources** (a
+  direct per-user grant vs. an inherited role/group delegation) — the restricted
+  principal is defined by their per-user caps, but the role fallback overrides them
+- `?: true`, `?? $adminCap`, `|| current_user_can($broaderCap)` as the *else* of a
+  narrow check inside an ACL/policy helper
+- A "manager"/"delegated"/"team"/"member" tier whose restriction is enforced by
+  *omitting* caps, while a sibling code path *adds* caps back via a role/flag lookup
+- The enforcement helper and the UI-report helper diverging: one applies the
+  fallback, the other doesn't — the admin UI shows scoped caps while the API grants
+  full (or vice versa)
+
+**Required pattern:** a fallback grant MUST be gated to the exact principal class
+it models. When two access sources coexist (an explicit per-user grant vs. a
+role/group-delegated grant), detect the restricted source first and **skip the
+broadening fallback for it** — the restricted principal is governed strictly by
+their own capabilities. The enforcement path and the UI-report path MUST apply
+the identical rule so displayed permissions match what the API enforces. When
+reviewing any change to an ACL/permission helper, **enumerate every user
+population** (superadmin, explicit per-user grantee, role/group-delegated, plain)
+and confirm the *restricted* one cannot reach a grant through a fallback intended
+for a *different* one.
+
+**Corpus evidence:**
+- `fluent-forms` PR #1031 (Wordfence, commit `d32540cc`) —
+  `app/Modules/Acl/Acl.php::hasPermission()`: `$grantedRole =
+  getCurrentUserCapability()` was applied to every user, so a Manager restricted
+  to "View Forms" whose WP role was *also* delegated FluentForm access silently
+  regained full scoped access (read/delete every submission, edit global
+  settings). Fix gates the fallback on an explicit-manager check
+  (`isExplicitManager()` / `userHasDirectGrant()`); the UI-report helper
+  `getUserPermissions()` was aligned to report the same scoped set.
+
+**Severity:** **Blocking** when the fallback lets a deliberately-restricted
+principal reach broader write/delete/settings access; **High** for broader read;
+**Medium** when only the UI-report helper over-reports (enforcement is correct
+but the displayed permission set misleads the admin).
+
+---
+
 ## Project-specific extensions
 
 Teams using this pack in their own repo can append rules below this line
@@ -287,6 +352,9 @@ no shared corpus), severity. Rules added here are loaded by the detector
 alongside the base rules.
 
 <!-- BEGIN project-specific rules -->
+
+<!-- Promoted to base rule "Default-grant fallback in a permission check" (applies to all plugins). -->
+
 <!-- END project-specific rules -->
 
 ---

@@ -30,6 +30,23 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
 - `wp_kses_post()` for intentional HTML output
 - No bare `echo $variable` anywhere in templates or inline scripts
 - **Common plugin review finding:** using `esc_url_raw()` for output instead of `esc_url()`
+- **Stored value echoed into a `<script>` block = JS-context sink, not HTML.** When
+  a stored setting is emitted as `var x = <?php echo $value; ?>;` inside inline
+  JS, HTML-oriented sanitizers (`wp_kses`, tag-stripping regexes, a `fluentform_kses_js`-style
+  `<script>`-tag remover) do NOT neutralize it — the payload runs *inside* the
+  existing script, no tags needed. For a JS **object literal** the value MUST be
+  `json_decode()`'d and re-emitted via `wp_json_encode()` (or `wp_localize_script`);
+  a shape check like "starts with `{` and ends with `}`" is trivially bypassed by
+  `{};attackerCode();({})`. For a bare string interpolation use `esc_js()`.
+  Failure mode: stored XSS executes for every visitor rendering the form/page.
+- **Trace field-setting sanitization at BOTH ends.** A form field's `settings.*`
+  key is only sanitized if it appears in the save-time sanitizer map (e.g.
+  `Updater::sanitizeFieldMaps` `$settingsMap`). A key absent from that map is
+  stored verbatim — verify every setting that later reaches an output/JS/eval sink
+  is either in the map or escaped at output. Note the trust boundary:
+  `fluentformCanUnfilteredHTML()` short-circuits sanitization for `unfiltered_html`
+  users, so the attacker is the lower-privileged form editor (form-manager ACL),
+  whose input MUST be neutralized. Failure mode: unmapped setting → stored XSS.
 
 ## Authorization (nonce + capability, in that order)
 

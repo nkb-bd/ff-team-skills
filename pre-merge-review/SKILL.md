@@ -43,7 +43,7 @@ Do **not** create `/Volumes/Workspace/pr-reviews/` if it is missing — that sig
 
 **Re-run mode** — if a report already exists at the output path:
 1. Read existing findings under `## Inline findings`.
-2. Re-run detectors / passes. For each new finding, compare against priors on `(file, line, headline)`:
+2. Re-run detectors / passes **against the full branch diff (`origin/dev...HEAD`), never only the commits since the prior report**. Delta-only scrutiny is how findings on earlier commits survive every re-run (corpus: fluentform#1011 — an N+1 introduced mid-branch was cleared in run 1's blind spot and never revisited because runs 2–3 reviewed only new commits). The prior report is for *comparing* findings, not for *narrowing* scope. For each new finding, compare against priors on `(file, line, headline)`:
    - **Match:** keep (still open).
    - **Prior exists, no match now:** mark `[cleared]` in the new report.
    - **New finding, no prior match:** add fresh.
@@ -270,6 +270,8 @@ Load `references/patterns-vue.md`. Summary:
 - `get_option()` or DB call inside a hook firing on every page load — new **or moved into one** by this PR?
 - `->get()` on a model without `->where()` or `->limit()`? → full table scan.
 - `whereIn(...)->get()` whose ID list comes from request data, saved settings, serialized post meta, option values, or filter output without an explicit max count? → unbounded batched query.
+- A helper/method call inside a `foreach` whose **body** runs a query (e.g. `Helper::countFor($row->id)` per row)? → N+1 hidden behind one level of indirection; open the callee, don't just scan the loop body for query tokens.
+- Caller-supplied range params (`date_from`/`date_to`, timestamps, offsets) bounding a query with **no maximum span**? A `where created_at BETWEEN` is still unbounded work if the window can be 10 years — clamp the span the same way `per_page` is clamped.
 - WordPress-API queries without bounds: `get_terms()`, `get_posts()`, `get_users()`, `wp_get_object_terms()`, `WP_Query` without `posts_per_page` / `number` / `numberposts`? → unbounded retrieval.
 - DB call inside a `foreach`? → N+1.
 - New `add_action`/`add_filter` registered on every request that could be registered once at boot?
@@ -434,6 +436,34 @@ Non-obvious things done well — prevents review feeling adversarial.
 | **High** | A documented feature stops working or behaves differently |
 | **Medium** | Correctness, performance, or maintainability issue — no user-visible breakage |
 | **Suggestion** | Design issue, dead code, naming — no immediate impact |
+
+### Severity calibration rules
+
+- **Impact sets the floor; probability adjusts at most one tier.** A narrow
+  trigger window never demotes silent-data-loss/contract-breaking impact to
+  Suggestion. Classify by what happens WHEN it fires, then discount once for
+  rarity if warranted.
+- **Contract-violation floor:** if the finding makes the change break its own
+  documented promise (tool description, schema contract, PR claim), minimum
+  severity is High.
+- **Self-incrimination check:** if your evidence sentence states the failure
+  scenario is the feature's primary use case ("exactly the X scenario"), the
+  finding cannot be a Suggestion — re-tier it.
+
+### Resolution standard (re-runs and fix verification)
+
+- A finding is **resolved** only when the failure mechanism is structurally
+  impossible — not merely narrower or less likely. "Shrank the window" is a
+  mitigation, not a resolution; mark it `accepted-residual` with explicit
+  maintainer sign-off instead of closing it, and expect external reviewers to
+  re-flag it until the mechanism is gone.
+- When fixing a concurrency/atomicity finding, reach for the structural tool
+  first (row lock, transaction, compare-and-swap, idempotency key) and fall
+  back to narrowing only when the structural fix is genuinely unavailable —
+  then say so in the fix description.
+- When a finding's recommended fix says "X and/or Y", implement the strongest
+  option you can justify, not the cheapest half — half-fixes reopen as
+  re-blocks and cost more than doing Y up front.
 
 ---
 

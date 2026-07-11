@@ -42,6 +42,15 @@ Used by `engineering-review` Pass 5. Load when any `.js` file has changed.
 - Detection uses `typeof jQuery !== 'undefined'` — not `typeof $` (`$` may exist but point to Prototype/Mootools)
 - No `jQuery.isArray`, `jQuery.parseJSON`, `jQuery.trim`, `jQuery.type`, `jQuery.now`, `jQuery.isNumeric`, `jQuery.isFunction` — removed in jQuery 4.0 (shipping in WordPress 6.8)
 
+## Client-side REST security
+
+Cross-file / cross-repo data-flow — a linter sees three innocent lines; review must trace the chain. (Class caught after Patchstack f055ddde, CVSS 7.1: unencoded param → WP-core oEmbed proxy → JSONP eval.)
+
+- **Route param encoding** — every client-built REST path segment from a variable is wrapped in `encodeURIComponent()`. A raw `{param}` lets a `../../../` string escape the plugin's REST namespace into a WP-core endpoint (oEmbed proxy, etc.). Confirm no route expects a raw multi-segment param; if it does, split it into multiple encoded segments.
+- **Response-type pinning** — any authenticated `$.ajax`/`fetch` (one that sends the REST nonce) forces `dataType:'json'` / `Accept` + response-type. Without it a reflected `application/javascript` body is `globalEval`'d → XSS.
+- **Child-component ID validation** — a child that fires a REST call on `mount()`/`created()` validates its ID (e.g. `/^\d+$/`) BEFORE building the request; do not rely on a parent to validate first. Mount order lets the child fire against an unvalidated, attacker-controlled hash-route value.
+- **Source→sink across a repo split** — the *source* may live in the Pro plugin (hash-route params in entry-detail / partial-entries views) while the *sink* is a shared helper in Free (`Route.js`, `Request.js`). Trace where a param originates, not just where it's consumed — a single-diff review will not show both ends.
+
 ## Async / Fetch
 
 - `fetch()` checks `response.ok` before reading body — HTTP 4xx/5xx responses do not reject the promise
