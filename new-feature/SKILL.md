@@ -66,7 +66,7 @@ Then look at the request and pick a tier:
 | **Trivial** | Typo, config tweak, single-line copy change | Skip this skill entirely. Just commit. |
 | **Small** | Single-file fix, one-component cosmetic change | Phase 5 light only (use `$pre-merge-review light`). |
 | **Medium** | One new Vue panel, one new endpoint, one bugfix touching ~3 files | Phases 2 + 4 + 5 light (+ Phase 4.5 if it adds/reshapes a visible UI surface). Skip the grill if you already know the answer. |
-| **Large** | New module / service / policy / capability / data migration | Full workflow, Phase 4.5 UI demo, Phase 5 deep. |
+| **Large** | New module / service / policy / capability / data migration | Full workflow, refute before build, Phase 4.5 UI demo, Phase 5 deep. |
 | **Breaking** | API change, schema migration, removed feature | Full workflow + mandatory Phase 1 + `/plugin-audit` post-merge. |
 
 Announce the tier you picked and why. If the user disagrees, recalibrate before
@@ -185,11 +185,14 @@ design-an-interface). Wait for "yes".
 
 **Gate**: show spec + tasks. Wait for "yes".
 
-**Breaking tier — doubt before the gate.** If Phase 0 classed this **Breaking** (API change,
-schema migration, removed feature, public hook-contract change), run **`$doubt-driven-development`**
+**Refute before the gate (Tier ≥ Large).** If Phase 0 classed this **Large** (new module /
+service / policy / capability / data migration) or **Breaking** (API change, schema migration,
+removed feature, public hook-contract change), run the **refute step** — **`$doubt-driven-development`** —
 on the core decision *before* presenting the gate. Its CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
-loop spawns a fresh-context skeptic to refute the design; carry any accepted-doubt mitigations into
-`design.md` and `tasks.md`. A Breaking spec that hasn't survived the doubt loop is not ready to gate.
+loop spawns a fresh-context skeptic to refute the design, so the chosen approach has to survive
+challenge instead of winning by being the first or most-familiar option. Carry any accepted-doubt
+mitigations into `design.md` and `tasks.md`. A Large-or-Breaking spec that hasn't survived the
+refute step is not ready to gate.
 
 **Gate batching (optional):** working solo on a well-understood feature, you
 may present the Phase 2 and Phase 3 gates together (proposal + spec + tasks,
