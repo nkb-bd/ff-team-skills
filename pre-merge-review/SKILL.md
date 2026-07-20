@@ -212,6 +212,19 @@ What does external code (Pro plugin, themes, third-party plugins) depend on that
 - DB column renamed, dropped, or type-changed without migrating existing rows?
 - New `NOT NULL` column without a default? Breaks existing rows on write.
 
+### Pass A2 — Cross-boundary key contracts (all PR types)
+
+Triggered whenever the diff touches string-keyed data that crosses a boundary: Free↔Pro filter payloads, `wp_localize_script` vars, REST response shapes, postMessage payloads, or option arrays consumed by another layer. Assume several parallel keyspaces exist for the same entities (UI source keys vs service-layer slugs vs settings/integration keys) — mixed keyspaces inside one contract are the primary failure mode.
+
+Procedure (all steps mandatory — a match on one pair is NOT verification of the contract):
+
+1. Grep the payload key name (e.g. `pro_providers`) across ALL repos in the workspace. Enumerate every list/map that produces into or reads from the contract, including ones the diff did not touch.
+2. Name the keyspace each list speaks before comparing anything.
+3. Literal-diff every producer list against every consumer lookup — report N lists found and which pairs were diffed. Never write "keyspaces match" for the contract unless every pair was checked; list them in the report.
+4. Prefer runtime evidence (the localized payload in page source / console / a test) over reading one side's code.
+
+Origin: PR #546/#151 review miss — `connected_providers` was diffed against the consumer and declared "matching exactly" while `pro_providers`, six lines above in the same Pro filter and part of the same contract, spoke a different keyspace (`bunny` vs `bunnycdn`). An external reviewer caught it.
+
 ### Pass B — Regression risk (all PR types)
 
 What currently-working behaviour could break?

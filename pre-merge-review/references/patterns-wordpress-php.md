@@ -35,10 +35,22 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
   JS, HTML-oriented sanitizers (`wp_kses`, tag-stripping regexes, a `fluentform_kses_js`-style
   `<script>`-tag remover) do NOT neutralize it — the payload runs *inside* the
   existing script, no tags needed. For a JS **object literal** the value MUST be
-  `json_decode()`'d and re-emitted via `wp_json_encode()` (or `wp_localize_script`);
+  `json_decode()`'d and re-emitted via `wp_json_encode()` (or `wp_localize_script`),
+  OR the emitted JS is rebuilt from validated data tokens / whitelisted enums so the
+  raw string never reaches the sink (the `date_config` `DateConfigNormalizer` pattern);
   a shape check like "starts with `{` and ends with `}`" is trivially bypassed by
   `{};attackerCode();({})`. For a bare string interpolation use `esc_js()`.
   Failure mode: stored XSS executes for every visitor rendering the form/page.
+- **The JS sink can be reached via a `data-*` attribute, not just inline `<script>`.**
+  A stored free-text setting emitted as `data-x="<?php echo esc_attr($v); ?>"` is safe
+  *as an attribute*, but trace where the frontend reads it back (`jQuery(...).data('x')`)
+  and what it does with it. If it lands in an **evaluator**, the control is whether that
+  evaluator is a *dedicated safe parser* (a tokenizing math/expression evaluator like
+  `mexp` / math-expression-evaluator that throws on non-grammar input and computes only
+  numbers/operators/registered tokens) or native `eval()` / `new Function()`. A safe
+  evaluator cannot run an attacker string; native `eval` runs it verbatim. `esc_attr()`
+  neutralizes the *attribute* injection, NOT the downstream JS execution. Failure mode:
+  attribute-context escaping that looks safe while a user string reaches native `eval`.
 - **Trace field-setting sanitization at BOTH ends.** A form field's `settings.*`
   key is only sanitized if it appears in the save-time sanitizer map (e.g.
   `Updater::sanitizeFieldMaps` `$settingsMap`). A key absent from that map is
