@@ -4,74 +4,129 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The ff-team-skills Dictionary</title>
-<meta name="description" content="The vocabulary of the ff-team-skills skill system, as a constellation. Tap a bubble for the plain-English definition.">
+<meta name="description" content="The vocabulary of the ff-team-skills skill system as a constellation. Tap a bubble for the plain-English definition.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root { --sans:'Instrument Sans',sans-serif; --mono:'IBM Plex Mono',monospace; }
-[data-theme="day"]   { --bg:#ececea; --bg2:#f6f6f4; --ink:#1c1c1a; --ink2:#5c5c56; --ink3:#9a9a92; --hair:#dcdcd6; --accent:#1b6e4a; --accent-soft:#e4efe8; }
-[data-theme="sepia"] { --bg:#efe7d7; --bg2:#f7f1e5; --ink:#3a3226; --ink2:#6f6453; --ink3:#a4977f; --hair:#ddd2bd; --accent:#8a5a2b; --accent-soft:#efe3cf; }
-[data-theme="night"] { --bg:#121216; --bg2:#1a1a1f; --ink:#e6e6e2; --ink2:#a3a39c; --ink3:#6b6b65; --hair:#2a2a30; --accent:#6fcf9b; --accent-soft:#1e2a23; }
+
+/* ---- day: cool planetarium light ---- */
+[data-theme="day"] {
+  --bg:#eef1f0; --bg-cx:#f8faf9; --bg-edge:#dfe5e4; --bg2:#fbfcfb;
+  --ink:#20232a; --ink2:#565a63; --ink3:#8b909a; --hair:#dde2e1; --glow:.16;
+  --cat-orchestrator:#127a4e; --cat-build:#0f6f86; --cat-review:#a35d0e;
+  --cat-plan:#5f45b8; --cat-ship:#245ba8; --cat-vocab:#6f7580;
+}
+/* ---- sepia: warm archive ---- */
+[data-theme="sepia"] {
+  --bg:#efe7d7; --bg-cx:#f8f2e4; --bg-edge:#e3d8c0; --bg2:#f7f1e5;
+  --ink:#39301f; --ink2:#6b5f49; --ink3:#9c8e72; --hair:#ddd2bd; --glow:.18;
+  --cat-orchestrator:#4c6a2b; --cat-build:#2f6a67; --cat-review:#9a5a1e;
+  --cat-plan:#6a4f9a; --cat-ship:#3a5f8a; --cat-vocab:#8a7d63;
+}
+/* ---- night: deep sky ---- */
+[data-theme="night"] {
+  --bg:#0d0f13; --bg-cx:#161b22; --bg-edge:#080a0d; --bg2:#141821;
+  --ink:#e8ebef; --ink2:#a2a9b4; --ink3:#666d79; --hair:#242a34; --glow:.55;
+  --cat-orchestrator:#4fe39a; --cat-build:#3fcfe4; --cat-review:#f2b559;
+  --cat-plan:#b79bff; --cat-ship:#6ea8ff; --cat-vocab:#98a3b0;
+}
 
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden; height:100vh; transition:background .3s,color .3s; }
-a { color:var(--accent); text-decoration:none; }
+body { color:var(--ink); font-family:var(--sans); overflow:hidden; height:100vh;
+  background:var(--bg); transition:background .4s, color .4s; }
+a { color:var(--accent,var(--cat-orchestrator)); text-decoration:none; }
+
+/* z-index scale */
+:root { --z-field:1; --z-caption:5; --z-bar:20; --z-card:30; }
 
 /* top bar */
-.bar { position:fixed; inset:0 0 auto 0; z-index:30; display:flex; align-items:center; justify-content:space-between; padding:13px 24px; }
+.bar { position:fixed; inset:0 0 auto 0; z-index:var(--z-bar); display:flex; align-items:center; justify-content:space-between; padding:13px 24px; }
 .brand { font-family:var(--sans); font-weight:600; font-size:15px; letter-spacing:-.01em; }
 .brand a { color:inherit; } .brand span { color:var(--ink3); font-weight:400; }
 .controls { display:flex; gap:12px; align-items:center; font-size:13px; }
-.ctl { display:flex; gap:2px; border:1px solid var(--hair); border-radius:7px; padding:2px; background:color-mix(in srgb,var(--bg) 70%,transparent); backdrop-filter:blur(6px); }
-.ctl button, .ctl a { font-family:var(--sans); font-size:12px; border:0; background:none; color:var(--ink2); padding:4px 10px; border-radius:5px; cursor:pointer; text-decoration:none; line-height:1.6; }
-.ctl button.active, .ctl a.active { background:var(--bg2); color:var(--ink); }
+.ctl { display:flex; gap:2px; border:1px solid var(--hair); border-radius:8px; padding:2px;
+  background:color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter:blur(10px); }
+.ctl button, .ctl a { font-family:var(--sans); font-size:12px; border:0; background:none; color:var(--ink2);
+  padding:4px 10px; border-radius:6px; cursor:pointer; text-decoration:none; line-height:1.6; }
+.ctl button.active, .ctl a.active { background:color-mix(in srgb, var(--ink) 9%, transparent); color:var(--ink); }
 .gh { color:var(--ink2); font-size:13px; }
 @media (max-width:680px){ .hide-sm{ display:none; } }
 
-/* intro caption */
-.caption { position:fixed; z-index:20; left:24px; bottom:22px; max-width:340px; pointer-events:none; }
-.caption .k { font-family:var(--mono); font-size:11.5px; color:var(--ink3); letter-spacing:.04em; text-transform:uppercase; }
-.caption h1 { font-family:var(--sans); font-size:19px; font-weight:600; letter-spacing:-.01em; line-height:1.35; margin-top:6px; color:var(--ink2); }
-.caption h1 b { color:var(--ink); font-weight:700; }
+/* the field — radial spotlight + grain */
+.field { position:fixed; inset:0; z-index:var(--z-field); overflow:hidden;
+  background:
+    radial-gradient(125% 115% at 50% 6%, var(--bg-cx) 0%, var(--bg) 46%, var(--bg-edge) 100%),
+    radial-gradient(60% 55% at 78% 88%, color-mix(in srgb, var(--cat-plan) 8%, transparent), transparent 70%),
+    radial-gradient(55% 50% at 20% 78%, color-mix(in srgb, var(--cat-build) 7%, transparent), transparent 70%);
+}
+.field::before { content:''; position:absolute; inset:-50%; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.4; mix-blend-mode:soft-light; }
+[data-theme="night"] .field::before { opacity:.06; mix-blend-mode:screen; }
 
-/* the field */
-.field { position:absolute; inset:0; overflow:hidden;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  background-size:180px 180px; }
-[data-theme="day"] .field, [data-theme="sepia"] .field { background-blend-mode:overlay; }
-[data-theme="night"] .field { background-blend-mode:soft-light; }
-
+/* nodes */
 .node { position:absolute; transform:translate(-50%,-50%); display:grid; place-items:center;
-  background:none; border:0; cursor:pointer; padding:0; animation:drift var(--dur) ease-in-out var(--del) infinite; }
+  background:none; border:0; cursor:pointer; padding:0;
+  animation:drift var(--dur) ease-in-out var(--del) infinite; --c:var(--cat-vocab); }
 .node .bubble { grid-area:1/1; width:var(--r); height:var(--r); border-radius:50%;
-  background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--ink) calc(6% + var(--w)*5%),transparent), color-mix(in srgb,var(--ink) calc(3% + var(--w)*3%),transparent));
-  transition:transform .25s, background .25s; }
+  background:radial-gradient(circle at 38% 33%,
+    color-mix(in srgb, var(--c) 62%, transparent),
+    color-mix(in srgb, var(--c) 20%, transparent) 62%,
+    transparent 78%);
+  box-shadow:0 0 calc(var(--r)*.5) color-mix(in srgb, var(--c) calc(var(--glow)*100%), transparent);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s, background .3s; }
 .node .label { grid-area:1/1; font-family:var(--mono); font-weight:500; font-size:var(--f);
   letter-spacing:.02em; text-transform:uppercase; color:var(--ink2); white-space:nowrap;
-  transition:color .2s, transform .25s; text-shadow:0 1px 0 color-mix(in srgb,var(--bg) 60%,transparent); }
+  transition:color .25s, transform .3s;
+  text-shadow:0 1px 2px color-mix(in srgb, var(--bg) 78%, transparent); }
+.node:hover { z-index:6; }
 .node:hover .label { color:var(--ink); }
-.node:hover .bubble { transform:scale(1.14); background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--accent) 34%,transparent), color-mix(in srgb,var(--accent) 12%,transparent)); }
-.node.on .label { color:var(--accent); }
-.node.on .bubble { background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--accent) 42%,transparent), color-mix(in srgb,var(--accent) 16%,transparent)); }
-.node.dim { opacity:.28; }
+.node:hover .bubble { transform:scale(1.16);
+  background:radial-gradient(circle at 38% 33%, color-mix(in srgb, var(--c) 82%, transparent), color-mix(in srgb, var(--c) 30%, transparent) 62%, transparent 78%);
+  box-shadow:0 0 calc(var(--r)*.9) color-mix(in srgb, var(--c) calc(var(--glow)*130%), transparent); }
+.node.on { z-index:6; }
+.node.on .label { color:var(--c); filter:brightness(.9) saturate(1.1); }
+[data-theme="night"] .node.on .label { filter:none; color:var(--c); }
+.node.on .bubble { transform:scale(1.22);
+  background:radial-gradient(circle at 38% 33%, color-mix(in srgb, var(--c) 92%, transparent), color-mix(in srgb, var(--c) 34%, transparent) 60%, transparent 76%);
+  box-shadow:0 0 calc(var(--r)*1.15) color-mix(in srgb, var(--c) calc(var(--glow)*150%), transparent); }
+.node.dim { opacity:.24; filter:saturate(.5); }
 
 @keyframes drift {
   0%,100% { transform:translate(-50%,-50%); }
-  50%     { transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))); }
+  50%     { transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); }
 }
+@media (prefers-reduced-motion: reduce){ .node { animation:none; } }
+
+/* caption */
+.caption { position:fixed; z-index:var(--z-caption); left:24px; bottom:22px; max-width:360px; pointer-events:none; }
+.caption .k { font-family:var(--mono); font-size:11.5px; color:var(--ink3); letter-spacing:.05em; text-transform:uppercase; }
+.caption h1 { font-family:var(--sans); font-size:19px; font-weight:600; letter-spacing:-.01em; line-height:1.4; margin-top:7px; color:var(--ink2); text-wrap:balance; }
+.caption h1 b { color:var(--ink); font-weight:700; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:14px; pointer-events:auto; }
+.legend span { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.03em; }
+.legend i { width:8px; height:8px; border-radius:50%; background:var(--c);
+  box-shadow:0 0 7px color-mix(in srgb, var(--c) calc(var(--glow)*120%), transparent); }
 
 /* definition card */
-.card { position:fixed; z-index:40; right:24px; bottom:22px; width:min(380px,calc(100vw - 48px));
-  background:var(--bg2); border:1px solid var(--hair); border-radius:14px; padding:20px 22px;
-  box-shadow:0 18px 50px -18px rgba(0,0,0,.28); transform:translateY(14px); opacity:0; pointer-events:none;
-  transition:opacity .22s, transform .22s; }
-.card.show { transform:translateY(0); opacity:1; pointer-events:auto; }
-.card .cat { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); }
-.card .term { font-family:var(--mono); font-weight:500; font-size:19px; color:var(--ink); margin:4px 0 10px; }
-.card .def { font-size:15px; line-height:1.6; color:var(--ink2); }
-.card .row { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
-.card .row a { font-family:var(--sans); font-size:13px; font-weight:500; }
+.card { position:fixed; z-index:var(--z-card); right:24px; bottom:22px; width:min(390px, calc(100vw - 48px));
+  background:color-mix(in srgb, var(--bg2) 88%, transparent); backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid var(--hair); border-radius:16px; padding:20px 22px 18px;
+  box-shadow:0 24px 60px -20px color-mix(in srgb, var(--c,#000) 30%, rgba(0,0,0,.4));
+  transform:translateY(16px) scale(.98); opacity:0; pointer-events:none;
+  transition:opacity .28s cubic-bezier(.2,.8,.2,1), transform .28s cubic-bezier(.2,.8,.2,1);
+  --c:var(--cat-vocab); }
+.card.show { transform:none; opacity:1; pointer-events:auto; }
+.card .cat { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px;
+  text-transform:uppercase; letter-spacing:.09em; color:var(--c); font-weight:500; }
+.card .cat i { width:7px; height:7px; border-radius:50%; background:var(--c);
+  box-shadow:0 0 8px color-mix(in srgb, var(--c) calc(var(--glow)*130%), transparent); }
+.card .term { font-family:var(--mono); font-weight:500; font-size:19px; color:var(--ink); margin:8px 0 10px; }
+.card .def { font-size:14.5px; line-height:1.62; color:var(--ink2); max-width:60ch; text-wrap:pretty; }
+.card .row { display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px; border-top:1px solid var(--hair); }
+.card .row a { font-family:var(--sans); font-size:13px; font-weight:600; color:var(--c); }
 .card .close { font-family:var(--sans); font-size:12px; color:var(--ink3); background:none; border:0; cursor:pointer; }
 .card .close:hover { color:var(--ink); }
 </style>
@@ -96,10 +151,11 @@ a { color:var(--accent); text-decoration:none; }
 <div class="caption">
   <div class="k">The ff-team-skills Dictionary</div>
   <h1>The vocabulary of the skill system, in plain English. <b>Tap a bubble.</b></h1>
+  <div class="legend" id="legend"></div>
 </div>
 
 <div class="card" id="card">
-  <div class="cat" id="c-cat"></div>
+  <div class="cat" id="c-cat"><i></i><span id="c-cat-t"></span></div>
   <div class="term" id="c-term"></div>
   <div class="def" id="c-def"></div>
   <div class="row">
@@ -109,30 +165,28 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <script>
+const CATS = {
+  'Orchestrator':'orchestrator', 'Build':'build', 'Review':'review',
+  'Plan & align':'plan', 'Ship & setup':'ship', 'Vocabulary':'vocab'
+};
 const NODES = [
-  // orchestrators
   {t:'new-feature', w:3.0, cat:'Orchestrator', href:'./guide.html#new-feature', d:'End-to-end workflow for a new plugin feature. Six phases with approval gates: triage → align → plan → spec → build → review → ship. Decides which specialists to invoke and when.'},
   {t:'rigorous-coding-workflow', w:2.1, cat:'Orchestrator', href:'./guide.html#rigorous-coding-workflow', d:'The principles layer under new-feature — plan before executing, use subagents for context hygiene, capture lessons, verify before done, push for elegance.'},
-  // build
   {t:'tdd', w:2.5, cat:'Build', href:'./guide.html#tdd', d:'Test-driven development — red-green-refactor with the correct-seam check: the failing test must exercise the bug pattern at the real call site.'},
   {t:'bug-fix', w:2.5, cat:'Build', href:'./guide.html#bug-fix', d:'The canonical bug workflow. Fix mode: reproduce → minimise → hypothesise → instrument → fix → regression-test. Find mode: a plugin-wide discovery sweep with a Finder → Verifier → Feedback loop.'},
   {t:'source-driven-development', w:2.0, cat:'Build', href:'./guide.html#source-driven-development', d:"Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged UNVERIFIED: so it's never silently asserted."},
   {t:'zoom-out', w:1.7, cat:'Build', href:'./guide.html#zoom-out', d:"A higher-level map of an unfamiliar code area for when you're lost mid-task."},
-  // review
   {t:'pre-merge-review', w:2.8, cat:'Review', href:'./guide.html#pre-merge-review', d:'The canonical pre-merge review. Full: seven parallel detectors plus sequential pattern passes. Light: pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.'},
   {t:'doubt-driven-development', w:2.0, cat:'Review', href:'./guide.html#doubt-driven-development', d:'Adversarial fresh-context review for irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic whose job is to refute.'},
   {t:'plugin-audit', w:2.2, cat:'Review', href:'./guide.html#plugin-audit', d:'A deep WordPress-plugin audit — security, optimization, dead code, UI-to-DB traceability — producing evidence-backed findings and a severity-ranked remediation backlog.'},
   {t:'improve-codebase-architecture', w:1.9, cat:'Review', href:'./guide.html#improve-codebase-architecture', d:'Finds deepening and refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for a mid-feature refactor itch.'},
   {t:'explain-this', w:1.8, cat:'Review', href:'./guide.html#explain-this', d:'Teaches a file, feature, or PR to mastery — a running coverage checklist, five-whys on every decision, and eli5 / eli14 / intern depth levels. Quizzes are opt-in.'},
-  // plan
   {t:'grill-with-docs', w:1.9, cat:'Plan & align', href:'./guide.html#grill-with-docs', d:"Grilling that stress-tests a plan against the project's domain model — CONTEXT.md, ADRs — and updates the docs inline as decisions crystallise."},
   {t:'grill-me', w:1.8, cat:'Plan & align', href:'./guide.html#grill-me', d:'A relentless plan interview that resolves every branch of the decision tree until you and the agent share one understanding. Pure alignment, no doc updates.'},
   {t:'design-an-interface', w:1.9, cat:'Plan & align', href:'./guide.html#design-an-interface', d:'Generate three-plus radically different interface designs for a module via parallel sub-agents, each with a divergent constraint. Compare, pick, record.'},
-  // ship
   {t:'pr-descriptor', w:1.8, cat:'Ship & setup', href:'./guide.html#pr-descriptor', d:"A why-first PR description built from the actual git evidence, filling the repo's PR template."},
   {t:'agents-onboarding', w:1.7, cat:'Ship & setup', href:'./guide.html#agents-onboarding', d:'Create or refresh AGENTS.md onboarding docs so coding agents behave consistently in a repo.'},
   {t:'setup-code-review-graph', w:1.7, cat:'Ship & setup', href:'./guide.html#setup-code-review-graph', d:'Wire the code-review-graph MCP server into a repo — .mcp.json, the CLAUDE.md block, the seed build — so the codebase can be queried as a structural graph.'},
-  // vocabulary
   {t:'orchestrator', w:1.6, cat:'Vocabulary', href:null, d:'A composite skill that sequences other skills and owns the phase order. new-feature is the one orchestrator; everything else is a specialist.'},
   {t:'specialist', w:1.5, cat:'Vocabulary', href:null, d:'A single-purpose skill you can call directly for standalone work, or that the orchestrator invokes as one step.'},
   {t:'gate', w:1.5, cat:'Vocabulary', href:null, d:'An explicit approval checkpoint between phases. Work does not advance until the gate is cleared — ceremony that scales with the tier.'},
@@ -157,12 +211,12 @@ const els = [];
 function rngFactory(seed){ let s = seed >>> 0; return () => { s = (s*1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }; }
 
 function build(){
-  field.innerHTML = '';
-  els.length = 0;
+  field.innerHTML = ''; els.length = 0;
   NODES.forEach((nd, i) => {
+    const slug = CATS[nd.cat];
     const b = document.createElement('button');
     b.className = 'node';
-    b.style.setProperty('--w', nd.w);
+    b.style.setProperty('--c', 'var(--cat-' + slug + ')');
     b.style.setProperty('--r', (20 + nd.w*17) + 'px');
     b.style.setProperty('--f', (11.5 + nd.w*1.9) + 'px');
     b.innerHTML = '<span class="bubble"></span><span class="label">' + nd.t + '</span>';
@@ -180,7 +234,7 @@ function layout(){
   const cols = Math.max(3, Math.round(Math.sqrt(n * aspect)));
   const rows = Math.ceil(n / cols);
   const rnd = rngFactory(20260720);
-  const marginX = 0.055, marginY = 0.14;
+  const marginX = 0.055, marginY = 0.16;
   els.forEach((b, i) => {
     const col = i % cols, row = Math.floor(i / cols);
     const cw = (1 - marginX*2) / cols, ch = (1 - marginY*2) / rows;
@@ -195,12 +249,22 @@ function layout(){
   });
 }
 
-let current = -1;
+function buildLegend(){
+  const leg = document.getElementById('legend');
+  leg.innerHTML = '';
+  Object.entries(CATS).forEach(([label, slug]) => {
+    const s = document.createElement('span');
+    s.style.setProperty('--c', 'var(--cat-' + slug + ')');
+    s.innerHTML = '<i></i>' + label;
+    leg.appendChild(s);
+  });
+}
+
 function select(i){
-  current = i;
-  const nd = NODES[i];
+  const nd = NODES[i], slug = CATS[nd.cat];
   els.forEach((b, j) => { b.classList.toggle('on', j === i); b.classList.toggle('dim', j !== i); });
-  document.getElementById('c-cat').textContent = nd.cat;
+  card.style.setProperty('--c', 'var(--cat-' + slug + ')');
+  document.getElementById('c-cat-t').textContent = nd.cat;
   document.getElementById('c-term').textContent = nd.t;
   document.getElementById('c-def').textContent = nd.d;
   const link = document.getElementById('c-link');
@@ -209,7 +273,6 @@ function select(i){
   card.classList.add('show');
 }
 function deselect(){
-  current = -1;
   els.forEach(b => b.classList.remove('on', 'dim'));
   card.classList.remove('show');
 }
@@ -219,7 +282,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') deselect(); 
 
 let rt;
 window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 150); });
-build();
+buildLegend(); build();
 
 function wireTheme(){
   const root = document.documentElement, attr = 'data-theme';
