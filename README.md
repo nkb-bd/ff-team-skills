@@ -2,7 +2,9 @@
 
 FF team Claude Code skill library — orchestrator workflows, review gates, and WordPress-plugin engineering patterns.
 
-**📖 [Skill Guide (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — illustrated guide to every skill, when to use it, and how they chain.
+**🏠 [Home (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — landing page: the library at a glance, grouped by what each skill does.
+**📖 [Skill Guide](https://nkb-bd.github.io/ff-team-skills/guide.html)** — illustrated guide to every skill, when to use it, and how they chain.
+**📕 [Skill Dictionary](https://nkb-bd.github.io/ff-team-skills/dictionary.html)** — every skill and term in one line of plain English.
 **🗺 [new-feature illustrated manual](https://nkb-bd.github.io/ff-team-skills/new-feature.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
 ## Active skills
@@ -49,12 +51,6 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | `agents-onboarding` | Create or refresh `AGENTS.md` onboarding docs for coding agents. |
 | `setup-code-review-graph` | Wire the code-review-graph MCP server into a repo (`.mcp.json`, CLAUDE.md block, seed build). |
 
-### Product
-
-| Skill | Purpose |
-|---|---|
-| `hyperlocal-gtm` | Go-to-market playbook for hyperlocal / city-scoped consumer products in emerging markets. |
-
 ## Dispatch — which skill to invoke
 
 | User intent | Skill |
@@ -96,7 +92,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 ff-team-skills/
 ├── <skill-name>/            SKILL.md (+ agents/, references/ when applicable)
 ├── new-feature/             SKILL.md + AUDIT.md (illustrated manual lives in docs/)
-├── docs/                    GitHub Pages skill guide (index.html)
+├── docs/                    GitHub Pages: index.html (landing) · guide.html · dictionary.html · new-feature.html
 ├── shared/scripts/          audit-autharif.sh — weekly drift check for pre-merge-review criteria packs
 ├── _flows/                  Flow definitions
 ├── _inactive/               Shelved skills — unused but kept. Move back to root to re-activate.
