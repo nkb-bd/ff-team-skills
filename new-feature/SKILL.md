@@ -12,7 +12,7 @@ when_to_use: >
   a WPManageNinja-style plugin. Invoke as $new-feature or with "use the new-feature
   workflow". For a typo fix or single-line tweak, do not invoke — just commit.
 context: fork
-allowed-tools: Read Write Edit Bash(git *) Bash(gh *) Bash(grep *) Bash(find *) Bash(openspec *) Bash(rg *)
+allowed-tools: Read Write Edit Bash(git *) Bash(gh *) Bash(grep *) Bash(find *) Bash(openspec *) Bash(rg *) Bash(composer *) Bash(npm *) Bash(open *)
 effort: high
 ---
 
@@ -40,11 +40,10 @@ first-class answers.** Phrase it openly, e.g.: *"What are we working on?
 An issue #, PRD, or openspec change name is great — or just describe the
 feature or bug in your own words."* Accept any of:
 
-- A GitHub issue # (likely produced by `$qa`, `$triage`, or
-  `$request-refactor-plan`)
-- A PRD path (likely produced by `$to-prd`)
+- A GitHub issue #
+- A PRD path (any external product doc)
 - An openspec change name (if a previous run already scaffolded it)
-- A tracer-bullet issue from `$to-issues`
+- A tracer-bullet / spike issue
 - **A plain-language description** — "users can't export entries with
   conditional logic", "we need a duplicate-form button". Never bounce
   the user back to go file an issue first; the description IS the input.
@@ -66,8 +65,8 @@ Then look at the request and pick a tier:
 |---|---|---|
 | **Trivial** | Typo, config tweak, single-line copy change | Skip this skill entirely. Just commit. |
 | **Small** | Single-file fix, one-component cosmetic change | Phase 5 light only (use `$pre-merge-review light`). |
-| **Medium** | One new Vue panel, one new endpoint, one bugfix touching ~3 files | Phases 2 + 4 + 5 light. Skip the grill if you already know the answer. |
-| **Large** | New module / service / policy / capability / data migration | Full workflow, Phase 5 deep. |
+| **Medium** | One new Vue panel, one new endpoint, one bugfix touching ~3 files | Phases 2 + 4 + 5 light (+ Phase 4.5 if it adds/reshapes a visible UI surface). Skip the grill if you already know the answer. |
+| **Large** | New module / service / policy / capability / data migration | Full workflow, Phase 4.5 UI demo, Phase 5 deep. |
 | **Breaking** | API change, schema migration, removed feature | Full workflow + mandatory Phase 1 + `/plugin-audit` post-merge. |
 
 Announce the tier you picked and why. If the user disagrees, recalibrate before
@@ -141,9 +140,21 @@ never improvise it.
 3. Run `openspec instructions --change <name> proposal` to see the template.
 4. Write `proposal.md`:
    - **Why** — 1–2 sentences
+   - **Who + problem** — who hits this today (from Phase 1's grill), what it costs them.
+   - **Success signal** — one observable way you'll know it worked (a metric, a
+     support-ticket class that disappears, a task that gets faster). "Definition of
+     done" at the product level, not the test level. If you can't name one, the
+     feature may not be worth building — surface that.
+   - **Analytics / telemetry** — does this need event tracking? The plugin ships an
+     analytics module; state explicitly "yes, track X" or "no telemetry" so it's a
+     decision, not an omission.
+   - **Free vs Pro placement** — does this land in the free plugin or the Pro addon
+     (and if Pro, what min-Pro-version does the free side require)? This is
+     expensive to reverse once shipped — force the call here, not at review time.
    - **What Changes** — bullet list (mark `BREAKING` explicitly)
    - **Capabilities** — `New Capabilities` + `Modified Capabilities` (kebab-case names)
    - **Impact** — affected code / APIs / dependencies
+   - **Non-Goals** — what this deliberately does NOT do (scope fence).
 
 For Tier ≥ Large, ALSO invoke **`$design-an-interface`** (matt). Generate 3+
 radically different designs in parallel sub-agents — assign each a divergent
@@ -290,6 +301,62 @@ If a section feels architecturally wrong, defer to post-merge and invoke
 **`$improve-codebase-architecture`** (matt) later. Do not refactor the world
 mid-feature.
 
+## Phase 4.5 — UI Demo & Runtime Verify (Tier ≥ Large, OR any new/changed user-facing UI surface)
+
+Tests and static review prove the code is *correct*; they do not prove the
+feature *looks and behaves* the way anyone intended. For anything significant —
+a new module, a new admin panel or settings screen, a new Gutenberg block, a
+changed player control — build it, run it, and show the user the real UI before
+asking them to sign off on the review.
+
+**Don't ask about obvious cases — only ask when the demo is a real judgment
+call.** Decide silently:
+
+- **Obvious skip** — backend-only change, or a small/cosmetic UI tweak (copy
+  edit, spacing, a single label, an icon swap). Skip the demo, don't ask, just
+  announce the skip in one line and move to Phase 5. Asking here is noise.
+- **Obvious demo** — a genuinely new module, admin panel, settings screen, or
+  Gutenberg block. Building a demo is clearly warranted; just do it (still
+  respecting the build cost — see below), no need to ask permission first.
+- **Ask only in the middle** — a substantial change to an existing surface where
+  it's a real toss-up whether a demo earns its cost: *"This reshapes the X
+  screen. Want a runtime demo (screenshots / GIF) before review, or skip to
+  review?"* Generating one costs a full build + browser run and the user may
+  already have it open.
+
+If it's skipped (obvious or by the user's choice), go straight to Phase 5.
+Otherwise:
+
+1. **Full build, not a partial one.** Run `npm run build` (the complete
+   multi-entry build + manifest merge), never a single entry. A partial build
+   clobbers `assets/manifest.json` and blanks the admin UI (assets served as
+   `text/html`) — a known footgun in this repo. Confirm the build succeeded
+   before loading anything.
+2. **Run it and capture the UI.** Load the real screen and capture what the user
+   will see:
+   - Prefer the browser-automation tools (`mcp__claude-in-chrome__*`) to
+     navigate to the admin page / block editor / front-end player, then take a
+     screenshot — and a **GIF** (`gif_creator`) for any multi-step flow (open →
+     configure → save). Capture frames before and after each action.
+   - If the live app isn't reachable, generate a **self-contained demo HTML**
+     that renders the new component/states against the real built CSS, write it
+     to `.review/<change-name>-ui-demo.html`, and `open` it.
+   - Capture the meaningful states, not just the happy path: empty, loading,
+     error, and a filled/success state.
+3. **Show the user the demo** (screenshots / GIF / demo file path) alongside a
+   one-line note on what to look at. This is where UX problems that no test
+   catches surface — misalignment, missing labels, awkward flow, wrong copy.
+4. **Accessibility spot-check while it's on screen** (CLAUDE.md rule 13): every
+   icon-only control has a localized `aria-label`; nothing conveys state by color
+   alone; all visible strings go through `$t(...)` / `__()`. The DEEP a11y
+   detector runs in Phase 5, but catching it here — with the UI in front of you —
+   is cheaper than a review finding.
+
+If available, `Use $verify` for a structured "run the app and observe behavior"
+pass, and `$impeccable` if the UI needs a design/polish critique before shipping.
+
+**Gate**: show the demo. Wait for "yes" before moving to review.
+
 ## Phase 5 — Review (always; ~3 min light / ~10 min deep)
 
 Pick intensity:
@@ -346,10 +413,6 @@ finding is how the second bug ships.
 
 - **Quarterly**: `Use $plugin-audit` for full security + perf + dead-code +
   traceability sweep.
-- **Weekly**: `bash <agent-skills-repo>/shared/scripts/audit-autharif.sh --since 7-days-ago`
-  to detect drift in pre-merge-review's criteria packs (resolve the repo path
-  locally, e.g. `/Volumes/Projects/Tools/agent-skills`; skip if the script
-  doesn't exist on this machine).
 - **If feature introduced new domain terms**: append to `CONTEXT.md`.
 
 ## What NOT to do
@@ -358,9 +421,6 @@ finding is how the second bug ships.
   grilling catches the communication gap that costs 10× to fix later. (Medium
   may skip it per the tier table, but must then resolve the canonical noun via
   the Phase 2 inputs rule.)
-- **Don't run pre-merge-review with stale criteria packs.** Validate first:
-  `bash <agent-skills-repo>/shared/scripts/audit-autharif.sh --validate`
-  (skip if the script doesn't exist on this machine).
 - **Push/PR consent** — see the rules in Phase 4 (push) and Phase 6 (PR).
   Once-approved is not forever-approved.
 - **Don't fold the workflow into one mega-step.** The gates between phases
