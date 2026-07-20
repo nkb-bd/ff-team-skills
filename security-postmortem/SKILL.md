@@ -32,6 +32,8 @@ Output is always a **written report file** (resolved to the project's existing p
 
 Do not skip phases. The value is in the honesty of Phase 3 and the proof in Phase 5.
 
+> **MANDATORY — sibling-plugin parity.** The Fluent products ship as paired plugins (FluentForm free ↔ FluentForm **Pro**; likewise FluentCRM, FluentCommunity, FluentBooking). A fix or guard applied to ONE plugin is not done until you have grepped the sibling(s) for the same sink and either applied the same fix or recorded (in the report) that the sibling is clean. **Whenever a check runs on `fluentform` OR `fluentformpro`, run it on both.** This is not optional and not "phase 4 only" — it applies to tracing (a source in Pro can reach a sink in free), to the fix, and to the guard's coverage. The recurring failure mode this skill exists to kill is exactly *"free got hardened, Pro never followed"* (e.g. `Helper::safeUnserialize` shipped in free 2025-08 but Pro kept raw `maybe_unserialize` sinks). See Phase 4C.
+
 ---
 
 ## Phase 0 — Frame the artifact
@@ -86,6 +88,12 @@ For each root cause, pick the cheapest layer that would have caught it. Two kind
 - Provide a proper **ESLint/AST rule** as the upgrade path only when the repo has (or is adopting) a lint pipeline.
 - Each rule must pin a *specific* regression, not a broad style preference — it should map 1:1 to a link in the chain.
 
+**C. Sibling-plugin parity (mandatory — do this before declaring the fix done).**
+- Grep the sibling plugin(s) for the SAME sink/pattern: e.g. `grep -rn "maybe_unserialize\|unserialize(" ../fluentform*/src ../fluentform*/app`. Enumerate every hit and classify each as user-reachable or trusted-internal.
+- If the vulnerable pattern exists in the sibling, apply the same fix there too. Report each sibling as *patched* or *confirmed-clean* — never silently one-sided.
+- **Do not fix a Pro sink by calling a helper that only exists in a newer free.** Cross-plugin method calls fatal under version skew: Pro admits any free ≥ `FLUENTFORM_MINIMUM_CORE_VERSION` (currently `6.0.0`), which may predate the helper. Give the Pro plugin its OWN copy of the safe helper (e.g. in `PaymentHelper`/a Pro helper), or `method_exists`-guard only as a last resort. Note the min-core floor vs. the helper's introduction release in the report.
+- Extend the CI guard to scan BOTH `src` trees (free `app/` + Pro `src/`), so reintroducing the pattern in either plugin fails.
+
 Match house style: read `~/.claude/CLAUDE.md` and the repo `CLAUDE.md` (comment policy: default zero comments; the guard's *why* goes in a one-line header referencing the CVE/Patchstack ID, not inline narration).
 
 ## Phase 5 — Prove it (negative test — mandatory)
@@ -96,6 +104,8 @@ A guardrail that isn't proven to fire is decoration.
 - For a checklist update, sanity-check that the item, applied to the original vulnerable diff, would have flagged it.
 
 Never leave the working tree dirty from a negative test. Verify with `git diff <file>` returning empty.
+
+**Parity coverage:** run the negative test against BOTH plugins' sinks — revert the fix in each patched sibling in turn and confirm the guard fires for each. A guard that only scans one plugin's tree is a half-guard.
 
 ## Phase 6 — Report & wire in
 
@@ -183,3 +193,4 @@ grep -RnE "<pattern-that-MUST-NOT-exist>" path/ && { echo "✗ <what> reintroduc
 - One vuln → one post-mortem. Don't sweep the whole codebase for unrelated issues (that's `plugin-audit`/`bug-fix find`).
 - Prefer editing an EXISTING checklist/detector over inventing a new skill — the guardrail should live where reviewers already look.
 - A guardrail that would fire on legitimate code is worse than none — verify inertness (Phase 2) before shipping it.
+- Never ship a one-sided fix for a paired plugin. Free-and-Pro parity (Phase 4C) is part of "done", not a follow-up.
