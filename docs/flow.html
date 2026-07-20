@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The ff-team-skills Flow</title>
+<meta name="description" content="How the ff-team-skills system flows — from intent to ship. A readable pipeline of skills, phases, and gates. Click any skill or term for its plain-English definition.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --sans:'Instrument Sans',sans-serif; --mono:'IBM Plex Mono',monospace; }
+
+[data-theme="day"] {
+  --bg:#eef1f0; --bg2:#f8faf9; --card:#ffffff; --ink:#1c1f26; --ink2:#565a63; --ink3:#8b909a;
+  --hair:#dde2e1; --line:#c3cbca; --glow:.14;
+  --cat-orchestrator:#127a4e; --cat-build:#0f6f86; --cat-review:#a35d0e;
+  --cat-plan:#5f45b8; --cat-ship:#245ba8; --cat-vocab:#6f7580;
+}
+[data-theme="sepia"] {
+  --bg:#efe7d7; --bg2:#f8f2e4; --card:#fbf6ea; --ink:#38301f; --ink2:#6b5f49; --ink3:#9c8e72;
+  --hair:#ddd2bd; --line:#cabfa4; --glow:.16;
+  --cat-orchestrator:#4c6a2b; --cat-build:#2f6a67; --cat-review:#9a5a1e;
+  --cat-plan:#6a4f9a; --cat-ship:#3a5f8a; --cat-vocab:#8a7d63;
+}
+[data-theme="night"] {
+  --bg:#0d0f13; --bg2:#141821; --card:#171c25; --ink:#e8ebef; --ink2:#a2a9b4; --ink3:#6a7280;
+  --hair:#242a34; --line:#333c49; --glow:.5;
+  --cat-orchestrator:#4fe39a; --cat-build:#3fcfe4; --cat-review:#f2b559;
+  --cat-plan:#b79bff; --cat-ship:#6ea8ff; --cat-vocab:#98a3b0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { color:var(--ink); font-family:var(--sans); background:var(--bg);
+  transition:background .4s, color .4s; -webkit-font-smoothing:antialiased; min-height:100vh; }
+a { color:inherit; text-decoration:none; }
+button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+
+/* ---- top bar ---- */
+.bar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+  padding:13px 24px; background:color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--hair); }
+.brand { font-weight:600; font-size:15px; letter-spacing:-.01em; }
+.brand span { color:var(--ink3); font-weight:400; }
+.controls { display:flex; gap:12px; align-items:center; }
+.ctl { display:flex; gap:2px; border:1px solid var(--hair); border-radius:8px; padding:2px; }
+.ctl button, .ctl a { font-size:12px; color:var(--ink2); padding:4px 10px; border-radius:6px; line-height:1.6; }
+.ctl button.active, .ctl a.active { background:color-mix(in srgb, var(--ink) 9%, transparent); color:var(--ink); }
+.gh { color:var(--ink2); font-size:13px; }
+@media (max-width:700px){ .hide-sm{ display:none; } }
+
+/* ---- page shell ---- */
+.wrap { max-width:720px; margin:0 auto; padding:48px 24px 140px; }
+.head { text-align:center; margin-bottom:40px; }
+.head .k { font-family:var(--mono); font-size:11.5px; color:var(--ink3); letter-spacing:.14em; text-transform:uppercase; }
+.head h1 { font-size:clamp(28px,5vw,44px); font-weight:700; letter-spacing:-.025em; line-height:1.05; margin:12px 0 10px; text-wrap:balance; }
+.head p { color:var(--ink2); font-size:15px; line-height:1.6; max-width:52ch; margin:0 auto; text-wrap:pretty; }
+.head .legend { display:flex; flex-wrap:wrap; justify-content:center; gap:7px 16px; margin-top:20px; }
+.head .legend span { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; color:var(--ink2); text-transform:uppercase; letter-spacing:.03em; }
+.head .legend i { width:8px; height:8px; border-radius:50%; background:var(--c); box-shadow:0 0 7px color-mix(in srgb, var(--c) calc(var(--glow)*130%), transparent); }
+
+/* ---- flow column ---- */
+.flow { display:flex; flex-direction:column; align-items:center; }
+
+/* connector between blocks */
+.conn { position:relative; width:2px; height:56px; background:var(--line); }
+.conn::after { content:''; position:absolute; left:50%; bottom:-1px; width:9px; height:9px;
+  border-right:2px solid var(--line); border-bottom:2px solid var(--line);
+  transform:translate(-50%,-50%) rotate(45deg); }
+.conn .gate { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--cat-vocab); background:var(--bg); border:1px solid var(--hair); border-radius:20px;
+  padding:3px 11px 3px 9px; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; transition:border-color .2s, color .2s; }
+.conn .gate::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--cat-vocab); }
+.conn .gate:hover { color:var(--ink); border-color:var(--line); }
+
+/* dispatch */
+.dispatch { width:100%; background:var(--card); border:1px solid var(--hair); border-radius:16px; padding:20px 22px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.dispatch .dh { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); margin-bottom:14px; }
+.route { display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px dashed var(--hair); flex-wrap:wrap; }
+.route:first-of-type { border-top:0; }
+.route .intent { font-size:14px; color:var(--ink2); min-width:132px; }
+.route .arr { color:var(--ink3); font-family:var(--mono); }
+.route.spine .intent { color:var(--ink); font-weight:600; }
+
+/* phase / block card */
+.block { position:relative; width:100%; background:var(--card); border:1px solid var(--hair); border-radius:16px;
+  padding:18px 20px; box-shadow:0 1px 2px rgba(0,0,0,.04); border-left:3px solid var(--c, var(--line)); }
+.block.hero { padding:22px 24px; border-left-width:3px; }
+.block .top { display:flex; align-items:baseline; gap:12px; }
+.block .pnum { font-family:var(--mono); font-size:12px; color:var(--ink3); font-weight:500; }
+.block .pname { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.block.hero .pname { font-family:var(--mono); font-weight:500; font-size:19px; color:var(--cat-orchestrator); }
+.block .role { margin-left:auto; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); }
+.block .pdesc { color:var(--ink2); font-size:13.5px; line-height:1.55; margin-top:6px; max-width:56ch; }
+.pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.pill { --c:var(--cat-vocab); display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:12.5px;
+  color:var(--ink); border:1px solid color-mix(in srgb, var(--c) 40%, var(--hair)); border-radius:9px; padding:6px 11px;
+  background:color-mix(in srgb, var(--c) 7%, transparent); transition:transform .15s, background .2s, border-color .2s; }
+.pill i { width:6px; height:6px; border-radius:50%; background:var(--c); box-shadow:0 0 7px color-mix(in srgb, var(--c) calc(var(--glow)*140%), transparent); }
+.pill:hover { transform:translateY(-1px); background:color-mix(in srgb, var(--c) 15%, transparent); border-color:var(--c); }
+.pill.on { background:color-mix(in srgb, var(--c) 20%, transparent); border-color:var(--c); }
+
+/* branch group label */
+.group-label { display:flex; align-items:center; gap:12px; width:100%; margin:12px 0 -4px; }
+.group-label::before, .group-label::after { content:''; flex:1; height:1px; background:var(--hair); }
+.group-label span { font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink3); }
+
+.side { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:560px){ .side { grid-template-columns:1fr; } .route .intent{ min-width:0; } }
+
+/* vocabulary strip */
+.vocab { width:100%; margin-top:8px; }
+.vocab .pills { justify-content:center; }
+.vocab .pill { font-size:12px; padding:5px 10px; }
+
+/* ---- definition panel ---- */
+.panel { position:fixed; z-index:40; right:22px; bottom:22px; width:min(400px, calc(100vw - 44px));
+  background:color-mix(in srgb, var(--card) 96%, transparent); backdrop-filter:blur(18px) saturate(1.1);
+  border:1px solid var(--hair); border-radius:16px; padding:20px 22px 16px;
+  box-shadow:0 26px 64px -22px rgba(0,0,0,.5); --c:var(--cat-vocab);
+  transform:translateY(16px) scale(.98); opacity:0; pointer-events:none;
+  transition:opacity .28s cubic-bezier(.2,.8,.2,1), transform .28s cubic-bezier(.2,.8,.2,1); }
+.panel.show { transform:none; opacity:1; pointer-events:auto; }
+.panel .cat { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:var(--c); font-weight:500; }
+.panel .cat i { width:7px; height:7px; border-radius:50%; background:var(--c); }
+.panel .term { font-family:var(--mono); font-weight:500; font-size:19px; color:var(--ink); margin:8px 0 10px; }
+.panel .def { font-size:14px; line-height:1.62; color:var(--ink2); max-width:60ch; text-wrap:pretty; }
+.panel .row { display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:13px; border-top:1px solid var(--hair); }
+.panel .row a { font-size:13px; font-weight:600; color:var(--c); }
+.panel .row a[hidden] { display:none; }
+.panel .close { font-size:12px; color:var(--ink3); }
+.panel .close:hover { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand"><a href="./">ff-team-skills</a> <span>/ flow</span></div>
+  <div class="controls">
+    <div class="ctl"><a href="./">Home</a><a href="./guide.html">Guide</a><a href="./flow.html" class="active">Flow</a></div>
+    <div class="ctl hide-sm" id="theme-ctl"><button data-v="day">Day</button><button data-v="sepia">Sepia</button><button data-v="night">Night</button></div>
+    <a class="gh hide-sm" href="https://github.com/nkb-bd/ff-team-skills">GitHub ↗</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="k">The ff-team-skills Flow</div>
+    <h1>From intent to ship, one pass at a time.</h1>
+    <p>The whole system is a pipeline. Start with what you want to do; the right skill takes it from there. Each phase clears a <b>gate</b> before the next begins. Click any skill or term for its definition.</p>
+    <div class="legend">
+      <span style="--c:var(--cat-orchestrator)"><i></i>Orchestrator</span>
+      <span style="--c:var(--cat-plan)"><i></i>Plan &amp; align</span>
+      <span style="--c:var(--cat-build)"><i></i>Build</span>
+      <span style="--c:var(--cat-review)"><i></i>Review</span>
+      <span style="--c:var(--cat-ship)"><i></i>Ship &amp; setup</span>
+    </div>
+  </div>
+
+  <div class="flow">
+
+    <!-- DISPATCH -->
+    <div class="dispatch">
+      <div class="dh">Start — what do you want to do?</div>
+      <div class="route"><span class="intent">Fix a bug</span><span class="arr">→</span><button class="pill" data-term="bug-fix" style="--c:var(--cat-build)"><i></i>bug-fix</button></div>
+      <div class="route"><span class="intent">Review a branch</span><span class="arr">→</span><button class="pill" data-term="pre-merge-review" style="--c:var(--cat-review)"><i></i>pre-merge-review</button></div>
+      <div class="route"><span class="intent">Understand code</span><span class="arr">→</span><button class="pill" data-term="explain-this" style="--c:var(--cat-review)"><i></i>explain-this</button><button class="pill" data-term="zoom-out" style="--c:var(--cat-build)"><i></i>zoom-out</button></div>
+      <div class="route"><span class="intent">Audit a plugin</span><span class="arr">→</span><button class="pill" data-term="plugin-audit" style="--c:var(--cat-review)"><i></i>plugin-audit</button></div>
+      <div class="route spine"><span class="intent">Build a feature</span><span class="arr">→</span><button class="pill" data-term="new-feature" style="--c:var(--cat-orchestrator)"><i></i>new-feature</button><span class="arr">↓ orchestrates the pipeline</span></div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="dispatch">dispatch</span></div>
+
+    <!-- HERO: new-feature -->
+    <div class="block hero" style="--c:var(--cat-orchestrator)">
+      <div class="top"><span class="pname" data-term="new-feature" style="cursor:pointer">new-feature</span><span class="role" data-term="orchestrator" style="cursor:pointer">orchestrator</span></div>
+      <div class="pdesc">Owns the phase order and decides which specialist runs when. Everything below is one numbered <b>phase</b>, separated by approval gates. Its principles come from <button class="pill" data-term="rigorous-coding-workflow" style="--c:var(--cat-orchestrator); font-size:12px; padding:4px 9px; margin-left:2px"><i></i>rigorous-coding-workflow</button> and it keeps context clean with <button class="pill" data-term="subagent" style="--c:var(--cat-vocab); font-size:12px; padding:4px 9px"><i></i>subagents</button>.</div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="tier">size the change · tier</span></div>
+
+    <!-- PHASE 1 -->
+    <div class="block" style="--c:var(--cat-vocab)">
+      <div class="top"><span class="pnum">01</span><span class="pname">Triage</span></div>
+      <div class="pdesc">Classify the change so the process fits. The <b>tier</b> sets how much <b>ceremony</b> follows — a typo skips gates, a breaking change hardens every one.</div>
+      <div class="pills">
+        <button class="pill" data-term="tier"><i></i>tier</button>
+        <button class="pill" data-term="ceremony"><i></i>ceremony</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="gate">gate</span></div>
+
+    <!-- PHASE 2 -->
+    <div class="block" style="--c:var(--cat-plan)">
+      <div class="top"><span class="pnum">02</span><span class="pname">Align</span><span class="role">Plan &amp; align</span></div>
+      <div class="pdesc">Stress-test the plan and reach one shared understanding before any code.</div>
+      <div class="pills">
+        <button class="pill" data-term="grill-with-docs" style="--c:var(--cat-plan)"><i></i>grill-with-docs</button>
+        <button class="pill" data-term="grill-me" style="--c:var(--cat-plan)"><i></i>grill-me</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="gate">gate</span></div>
+
+    <!-- PHASE 3 -->
+    <div class="block" style="--c:var(--cat-plan)">
+      <div class="top"><span class="pnum">03</span><span class="pname">Plan / spec</span><span class="role">Plan &amp; align</span></div>
+      <div class="pdesc">Write the change down before building it. The <b>spec</b> is recorded in <b>openspec</b> and archived once shipped.</div>
+      <div class="pills">
+        <button class="pill" data-term="openspec" style="--c:var(--cat-vocab)"><i></i>openspec</button>
+        <button class="pill" data-term="spec" style="--c:var(--cat-vocab)"><i></i>spec</button>
+        <button class="pill" data-term="design-an-interface" style="--c:var(--cat-plan)"><i></i>design-an-interface</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="gate">gate</span></div>
+
+    <!-- PHASE 4 -->
+    <div class="block" style="--c:var(--cat-build)">
+      <div class="top"><span class="pnum">04</span><span class="pname">Build</span><span class="role">Build</span></div>
+      <div class="pdesc">Write it test-first, grounding every framework claim in real source. A <b>seam</b> keeps each test honest.</div>
+      <div class="pills">
+        <button class="pill" data-term="tdd" style="--c:var(--cat-build)"><i></i>tdd</button>
+        <button class="pill" data-term="bug-fix" style="--c:var(--cat-build)"><i></i>bug-fix</button>
+        <button class="pill" data-term="source-driven-development" style="--c:var(--cat-build)"><i></i>source-driven-development</button>
+        <button class="pill" data-term="seam"><i></i>seam</button>
+        <button class="pill" data-term="regression test"><i></i>regression test</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="gate">gate</span></div>
+
+    <!-- PHASE 5 -->
+    <div class="block" style="--c:var(--cat-review)">
+      <div class="top"><span class="pnum">05</span><span class="pname">Review</span><span class="role">Review</span></div>
+      <div class="pdesc">Run parallel <b>detectors</b> over the diff and, for irreversible calls, a fresh-context skeptic that tries to refute.</div>
+      <div class="pills">
+        <button class="pill" data-term="pre-merge-review" style="--c:var(--cat-review)"><i></i>pre-merge-review</button>
+        <button class="pill" data-term="doubt-driven-development" style="--c:var(--cat-review)"><i></i>doubt-driven-development</button>
+        <button class="pill" data-term="detector"><i></i>detector</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="gate">gate</span></div>
+
+    <!-- PHASE 6 -->
+    <div class="block" style="--c:var(--cat-ship)">
+      <div class="top"><span class="pnum">06</span><span class="pname">Ship</span><span class="role">Ship &amp; setup</span></div>
+      <div class="pdesc">Explain the change from the git evidence and hand it off. The PR description is the durable <b>artifact</b>.</div>
+      <div class="pills">
+        <button class="pill" data-term="pr-descriptor" style="--c:var(--cat-ship)"><i></i>pr-descriptor</button>
+        <button class="pill" data-term="artifact"><i></i>artifact</button>
+      </div>
+    </div>
+
+    <!-- STANDALONE -->
+    <div class="group-label"><span>Standalone · run any time</span></div>
+    <div class="side">
+      <div class="block" style="--c:var(--cat-review)">
+        <div class="top"><span class="pname">After merge</span></div>
+        <div class="pdesc">Deepen the design once the feature lands.</div>
+        <div class="pills">
+          <button class="pill" data-term="improve-codebase-architecture" style="--c:var(--cat-review)"><i></i>improve-codebase-architecture</button>
+          <button class="pill" data-term="plugin-audit" style="--c:var(--cat-review)"><i></i>plugin-audit</button>
+        </div>
+      </div>
+      <div class="block" style="--c:var(--cat-ship)">
+        <div class="top"><span class="pname">One-time setup</span></div>
+        <div class="pdesc">Wire a repo so agents work well in it.</div>
+        <div class="pills">
+          <button class="pill" data-term="agents-onboarding" style="--c:var(--cat-ship)"><i></i>agents-onboarding</button>
+          <button class="pill" data-term="setup-code-review-graph" style="--c:var(--cat-ship)"><i></i>setup-code-review-graph</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOCABULARY -->
+    <div class="group-label"><span>Vocabulary</span></div>
+    <div class="vocab">
+      <div class="pills">
+        <button class="pill" data-term="orchestrator"><i></i>orchestrator</button>
+        <button class="pill" data-term="specialist"><i></i>specialist</button>
+        <button class="pill" data-term="phase"><i></i>phase</button>
+        <button class="pill" data-term="gate"><i></i>gate</button>
+        <button class="pill" data-term="tier"><i></i>tier</button>
+        <button class="pill" data-term="ceremony"><i></i>ceremony</button>
+        <button class="pill" data-term="dispatch"><i></i>dispatch</button>
+        <button class="pill" data-term="subagent"><i></i>subagent</button>
+        <button class="pill" data-term="detector"><i></i>detector</button>
+        <button class="pill" data-term="seam"><i></i>seam</button>
+        <button class="pill" data-term="spec"><i></i>spec</button>
+        <button class="pill" data-term="openspec"><i></i>openspec</button>
+        <button class="pill" data-term="regression test"><i></i>regression test</button>
+        <button class="pill" data-term="artifact"><i></i>artifact</button>
+        <button class="pill" data-term="remediation backlog"><i></i>remediation backlog</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <div class="cat" id="p-cat"><i></i><span id="p-cat-t"></span></div>
+  <div class="term" id="p-term"></div>
+  <div class="def" id="p-def"></div>
+  <div class="row"><a id="p-link" href="#">Open in the field guide →</a><button class="close" id="p-close">Close</button></div>
+</div>
+
+<script>
+const CAT_SLUG = { 'Orchestrator':'orchestrator','Build':'build','Review':'review','Plan & align':'plan','Ship & setup':'ship','Vocabulary':'vocab' };
+const TERMS = {
+  'new-feature':{cat:'Orchestrator', href:'./guide.html#new-feature', d:'End-to-end workflow for a new plugin feature. Six phases with approval gates: triage → align → plan → spec → build → review → ship. Decides which specialists to invoke and when.'},
+  'rigorous-coding-workflow':{cat:'Orchestrator', href:'./guide.html#rigorous-coding-workflow', d:'The principles layer under new-feature — plan before executing, use subagents for context hygiene, capture lessons, verify before done, push for elegance.'},
+  'tdd':{cat:'Build', href:'./guide.html#tdd', d:'Test-driven development — red-green-refactor with the correct-seam check: the failing test must exercise the bug pattern at the real call site.'},
+  'bug-fix':{cat:'Build', href:'./guide.html#bug-fix', d:'The canonical bug workflow. Fix mode: reproduce → minimise → hypothesise → instrument → fix → regression-test. Find mode: a plugin-wide discovery sweep with a Finder → Verifier → Feedback loop.'},
+  'source-driven-development':{cat:'Build', href:'./guide.html#source-driven-development', d:"Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged UNVERIFIED: so it's never silently asserted."},
+  'zoom-out':{cat:'Build', href:'./guide.html#zoom-out', d:"A higher-level map of an unfamiliar code area for when you're lost mid-task."},
+  'pre-merge-review':{cat:'Review', href:'./guide.html#pre-merge-review', d:'The canonical pre-merge review. Full: seven parallel detectors plus sequential pattern passes. Light: pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.'},
+  'doubt-driven-development':{cat:'Review', href:'./guide.html#doubt-driven-development', d:'Adversarial fresh-context review for irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic whose job is to refute.'},
+  'plugin-audit':{cat:'Review', href:'./guide.html#plugin-audit', d:'A deep WordPress-plugin audit — security, optimization, dead code, UI-to-DB traceability — producing evidence-backed findings and a severity-ranked remediation backlog.'},
+  'improve-codebase-architecture':{cat:'Review', href:'./guide.html#improve-codebase-architecture', d:'Finds deepening and refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for a mid-feature refactor itch.'},
+  'explain-this':{cat:'Review', href:'./guide.html#explain-this', d:'Teaches a file, feature, or PR to mastery — a running coverage checklist, five-whys on every decision, and eli5 / eli14 / intern depth levels. Quizzes are opt-in.'},
+  'grill-with-docs':{cat:'Plan & align', href:'./guide.html#grill-with-docs', d:"Grilling that stress-tests a plan against the project's domain model — CONTEXT.md, ADRs — and updates the docs inline as decisions crystallise."},
+  'grill-me':{cat:'Plan & align', href:'./guide.html#grill-me', d:'A relentless plan interview that resolves every branch of the decision tree until you and the agent share one understanding. Pure alignment, no doc updates.'},
+  'design-an-interface':{cat:'Plan & align', href:'./guide.html#design-an-interface', d:'Generate three-plus radically different interface designs for a module via parallel sub-agents, each with a divergent constraint. Compare, pick, record.'},
+  'pr-descriptor':{cat:'Ship & setup', href:'./guide.html#pr-descriptor', d:"A why-first PR description built from the actual git evidence, filling the repo's PR template."},
+  'agents-onboarding':{cat:'Ship & setup', href:'./guide.html#agents-onboarding', d:'Create or refresh AGENTS.md onboarding docs so coding agents behave consistently in a repo.'},
+  'setup-code-review-graph':{cat:'Ship & setup', href:'./guide.html#setup-code-review-graph', d:'Wire the code-review-graph MCP server into a repo — .mcp.json, the CLAUDE.md block, the seed build — so the codebase can be queried as a structural graph.'},
+  'orchestrator':{cat:'Vocabulary', href:null, d:'A composite skill that sequences other skills and owns the phase order. new-feature is the one orchestrator; everything else is a specialist.'},
+  'specialist':{cat:'Vocabulary', href:null, d:'A single-purpose skill you can call directly for standalone work, or that the orchestrator invokes as one step.'},
+  'gate':{cat:'Vocabulary', href:null, d:'An explicit approval checkpoint between phases. Work does not advance until the gate is cleared — ceremony that scales with the tier.'},
+  'tier':{cat:'Vocabulary', href:null, d:'The 5-step size classification (trivial → breaking) that decides how much ceremony a change gets. A typo skips everything; a breaking change hardens every gate.'},
+  'detector':{cat:'Vocabulary', href:null, d:'One parallel review lens in pre-merge-review — accessibility, async races, permissions, and four others — each scanning the diff for its own class of defect.'},
+  'seam':{cat:'Vocabulary', href:null, d:'The real call site a failing test must exercise. The correct-seam check in tdd rejects a test that passes without touching the actual bug.'},
+  'dispatch':{cat:'Vocabulary', href:null, d:'Choosing the right skill from what the user wants. Start from the intent ("fix this bug"), not from the skill list.'},
+  'phase':{cat:'Vocabulary', href:null, d:'One numbered stage of new-feature — triage, align, plan, spec, build, review, ship — separated by approval gates.'},
+  'ceremony':{cat:'Vocabulary', href:null, d:'The amount of process a change gets. It scales with the tier: a typo gets none, a breaking change gets every gate.'},
+  'subagent':{cat:'Vocabulary', href:null, d:'A separate agent spawned to do focused work in its own clean context, keeping the main session uncluttered — the engine of context hygiene.'},
+  'regression test':{cat:'Vocabulary', href:null, d:"A test added alongside a fix that fails on the old code and passes on the new, so the bug can't silently return."},
+  'spec':{cat:'Vocabulary', href:null, d:'The written plan for a change, produced in the plan/spec phase via openspec before any code is built.'},
+  'openspec':{cat:'Vocabulary', href:null, d:'The spec system new-feature uses to record a change’s plan, then archives once the work ships.'},
+  'artifact':{cat:'Vocabulary', href:null, d:'A durable output — spec, report, PR description — that carries knowledge forward as the project’s memory.'},
+  'remediation backlog':{cat:'Vocabulary', href:null, d:'The severity-ranked list of fixes plugin-audit produces from its findings.'},
+};
+
+const panel = document.getElementById('panel');
+let activeEl = null;
+function open(term, el){
+  const t = TERMS[term]; if (!t) return;
+  const slug = CAT_SLUG[t.cat];
+  panel.style.setProperty('--c', 'var(--cat-' + slug + ')');
+  document.getElementById('p-cat-t').textContent = t.cat;
+  document.getElementById('p-term').textContent = term;
+  document.getElementById('p-def').textContent = t.d;
+  const link = document.getElementById('p-link');
+  if (t.href){ link.href = t.href; link.hidden = false; } else link.hidden = true;
+  panel.classList.add('show');
+  if (activeEl) activeEl.classList.remove('on');
+  activeEl = el && el.classList.contains('pill') ? el : null;
+  if (activeEl) activeEl.classList.add('on');
+}
+function close(){ panel.classList.remove('show'); if (activeEl){ activeEl.classList.remove('on'); activeEl = null; } }
+document.getElementById('p-close').addEventListener('click', close);
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-term]');
+  if (t){ e.preventDefault(); open(t.dataset.term, t); return; }
+  if (!panel.contains(e.target)) close();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+/* theme */
+(function(){
+  const root = document.documentElement, attr = 'data-theme';
+  const saved = localStorage.getItem(attr); if (saved) root.setAttribute(attr, saved);
+  const box = document.getElementById('theme-ctl');
+  const sync = () => box.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === root.getAttribute(attr)));
+  box.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') return; root.setAttribute(attr, e.target.dataset.v); localStorage.setItem(attr, e.target.dataset.v); sync(); });
+  sync();
+})();
+</script>
+</body>
+</html>
