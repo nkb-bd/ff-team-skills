@@ -177,7 +177,8 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
     <!-- HERO: new-feature -->
     <div class="block hero" style="--c:var(--cat-orchestrator)">
       <div class="top"><span class="pname" data-term="new-feature" style="cursor:pointer">new-feature</span><span class="role" data-term="orchestrator" style="cursor:pointer">orchestrator</span></div>
-      <div class="pdesc">Owns the phase order and decides which specialist runs when. Everything below is one numbered <b>phase</b>, separated by approval gates. Its principles come from <button class="pill" data-term="rigorous-coding-workflow" style="--c:var(--cat-orchestrator); font-size:12px; padding:4px 9px; margin-left:2px"><i></i>rigorous-coding-workflow</button> and it keeps context clean with <button class="pill" data-term="subagent" style="--c:var(--cat-vocab); font-size:12px; padding:4px 9px"><i></i>subagents</button>.</div>
+      <div class="pdesc">Starts from an issue #, a <b>PRD</b>, or a plain description. Owns the phase order and decides which specialist runs when. Everything below is one numbered <b>phase</b>, separated by approval gates. Its principles come from <button class="pill" data-term="rigorous-coding-workflow" style="--c:var(--cat-orchestrator); font-size:12px; padding:4px 9px; margin-left:2px"><i></i>rigorous-coding-workflow</button> and it keeps context clean with <button class="pill" data-term="subagent" style="--c:var(--cat-vocab); font-size:12px; padding:4px 9px"><i></i>subagents</button>.</div>
+      <div class="pills"><button class="pill" data-term="prd" style="--c:var(--cat-plan)"><i></i>PRD</button></div>
     </div>
 
     <div class="conn"><span class="gate" data-term="tier">size the change · tier</span></div>
@@ -209,8 +210,9 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
     <!-- PHASE 3 -->
     <div class="block" style="--c:var(--cat-plan)">
       <div class="top"><span class="pnum">03</span><span class="pname">Plan / spec</span><span class="role">Plan &amp; align</span></div>
-      <div class="pdesc">Write the change down before building it. The <b>spec</b> is recorded in <b>openspec</b> and archived once shipped.</div>
+      <div class="pdesc">Write the change down before building it — seeded by the <b>PRD</b> or issue and the align grill. The <b>spec</b> is recorded in <b>openspec</b> and archived once shipped.</div>
       <div class="pills">
+        <button class="pill" data-term="prd" style="--c:var(--cat-plan)"><i></i>PRD</button>
         <button class="pill" data-term="openspec" style="--c:var(--cat-vocab)"><i></i>openspec</button>
         <button class="pill" data-term="spec" style="--c:var(--cat-vocab)"><i></i>spec</button>
         <button class="pill" data-term="design-an-interface" style="--c:var(--cat-plan)"><i></i>design-an-interface</button>
@@ -229,6 +231,18 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
         <button class="pill" data-term="source-driven-development" style="--c:var(--cat-build)"><i></i>source-driven-development</button>
         <button class="pill" data-term="seam"><i></i>seam</button>
         <button class="pill" data-term="regression test"><i></i>regression test</button>
+      </div>
+    </div>
+
+    <div class="conn"><span class="gate" data-term="ui-demo">demo?</span></div>
+
+    <!-- PHASE 4.5 — conditional -->
+    <div class="block" style="--c:var(--cat-review)">
+      <div class="top"><span class="pnum">4.5</span><span class="pname">UI Demo &amp; runtime verify</span><span class="role">Large tier · any UI change</span></div>
+      <div class="pdesc"><b>Show the running UI</b> before review — screenshots, a GIF, or a self-contained demo HTML — and wait for a yes. Only runs for a new or reshaped user-facing surface; trivial cosmetics skip it automatically.</div>
+      <div class="pills">
+        <button class="pill" data-term="ui-demo" style="--c:var(--cat-review)"><i></i>ui demo</button>
+        <button class="pill" data-term="artifact"><i></i>demo artifact</button>
       </div>
     </div>
 
@@ -285,6 +299,8 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
         <button class="pill" data-term="orchestrator"><i></i>orchestrator</button>
         <button class="pill" data-term="specialist"><i></i>specialist</button>
         <button class="pill" data-term="phase"><i></i>phase</button>
+        <button class="pill" data-term="prd"><i></i>PRD</button>
+        <button class="pill" data-term="ui-demo"><i></i>ui demo</button>
         <button class="pill" data-term="gate"><i></i>gate</button>
         <button class="pill" data-term="tier"><i></i>tier</button>
         <button class="pill" data-term="ceremony"><i></i>ceremony</button>
@@ -345,6 +361,8 @@ const TERMS = {
   'openspec':{cat:'Vocabulary', href:null, d:'The spec system new-feature uses to record a change’s plan, then archives once the work ships.'},
   'artifact':{cat:'Vocabulary', href:null, d:'A durable output — spec, report, PR description — that carries knowledge forward as the project’s memory.'},
   'remediation backlog':{cat:'Vocabulary', href:null, d:'The severity-ranked list of fixes plugin-audit produces from its findings.'},
+  'prd':{cat:'Plan & align', href:'./guide.html#new-feature', d:'Product requirements doc — an upstream product spec that can seed a change. new-feature reads it before the align grill, uses it to shape the plan and openspec proposal, and references it in the PR so the loop closes.'},
+  'ui-demo':{cat:'Review', href:'./guide.html#new-feature', d:'Phase 4.5 — UI Demo & runtime verify. For a Large-tier change or any new/changed user-facing surface, show the running UI (screenshots, a GIF, or a self-contained demo HTML) and gate on the user’s yes before review. Trivial cosmetics skip it.'},
 };
 
 const panel = document.getElementById('panel');
