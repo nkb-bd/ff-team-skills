@@ -4,73 +4,82 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The ff-team-skills Dictionary</title>
-<meta name="description" content="The vocabulary of the ff-team-skills skill system, in plain English.">
+<meta name="description" content="The vocabulary of the ff-team-skills skill system, as a constellation. Tap a bubble for the plain-English definition.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root { --sans:'Instrument Sans',sans-serif; --serif:'Newsreader',serif; --mono:'IBM Plex Mono',monospace; --size:16px; }
-[data-theme="day"]   { --bg:#fdfdfc; --bg2:#f6f6f4; --ink:#1c1c1a; --ink2:#5c5c56; --ink3:#9a9a92; --hair:#e7e7e2; --accent:#1b6e4a; --accent-soft:#eef5f0; --code-bg:#f4f4f1; }
-[data-theme="sepia"] { --bg:#f7f1e5; --bg2:#efe7d7; --ink:#3a3226; --ink2:#6f6453; --ink3:#a4977f; --hair:#e2d8c4; --accent:#8a5a2b; --accent-soft:#f0e6d4; --code-bg:#efe7d5; }
-[data-theme="night"] { --bg:#16161a; --bg2:#1d1d22; --ink:#e6e6e2; --ink2:#a3a39c; --ink3:#6b6b65; --hair:#2a2a30; --accent:#6fcf9b; --accent-soft:#1e2a23; --code-bg:#202026; }
-[data-face="sans"]  { --body: var(--sans); }
-[data-face="serif"] { --body: var(--serif); }
+:root { --sans:'Instrument Sans',sans-serif; --mono:'IBM Plex Mono',monospace; }
+[data-theme="day"]   { --bg:#ececea; --bg2:#f6f6f4; --ink:#1c1c1a; --ink2:#5c5c56; --ink3:#9a9a92; --hair:#dcdcd6; --accent:#1b6e4a; --accent-soft:#e4efe8; }
+[data-theme="sepia"] { --bg:#efe7d7; --bg2:#f7f1e5; --ink:#3a3226; --ink2:#6f6453; --ink3:#a4977f; --hair:#ddd2bd; --accent:#8a5a2b; --accent-soft:#efe3cf; }
+[data-theme="night"] { --bg:#121216; --bg2:#1a1a1f; --ink:#e6e6e2; --ink2:#a3a39c; --ink3:#6b6b65; --hair:#2a2a30; --accent:#6fcf9b; --accent-soft:#1e2a23; }
 
 * { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; }
-body { background:var(--bg); color:var(--ink); font-family:var(--body); font-size:var(--size); line-height:1.7; transition:background .3s,color .3s; }
+body { background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden; height:100vh; transition:background .3s,color .3s; }
 a { color:var(--accent); text-decoration:none; }
-a:hover { text-decoration:underline; text-underline-offset:3px; }
-code { font-family:var(--mono); font-size:.85em; background:var(--code-bg); padding:2px 6px; border-radius:4px; }
 
 /* top bar */
-.bar { position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:color-mix(in srgb,var(--bg) 88%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--hair); }
+.bar { position:fixed; inset:0 0 auto 0; z-index:30; display:flex; align-items:center; justify-content:space-between; padding:13px 24px; }
 .brand { font-family:var(--sans); font-weight:600; font-size:15px; letter-spacing:-.01em; }
-.brand span { color:var(--ink3); font-weight:400; }
-.controls { display:flex; gap:14px; align-items:center; font-family:var(--sans); font-size:13px; }
-.ctl { display:flex; gap:2px; border:1px solid var(--hair); border-radius:7px; padding:2px; }
+.brand a { color:inherit; } .brand span { color:var(--ink3); font-weight:400; }
+.controls { display:flex; gap:12px; align-items:center; font-size:13px; }
+.ctl { display:flex; gap:2px; border:1px solid var(--hair); border-radius:7px; padding:2px; background:color-mix(in srgb,var(--bg) 70%,transparent); backdrop-filter:blur(6px); }
 .ctl button, .ctl a { font-family:var(--sans); font-size:12px; border:0; background:none; color:var(--ink2); padding:4px 10px; border-radius:5px; cursor:pointer; text-decoration:none; line-height:1.6; }
 .ctl button.active, .ctl a.active { background:var(--bg2); color:var(--ink); }
-.ctl a:hover { text-decoration:none; color:var(--ink); }
 .gh { color:var(--ink2); font-size:13px; }
-@media (max-width:640px){ .hide-sm{ display:none; } }
+@media (max-width:680px){ .hide-sm{ display:none; } }
 
-/* page */
-.wrap { max-width:720px; margin:0 auto; padding:0 28px 120px; }
-.head { padding:80px 0 8px; }
-.head .kicker { font-family:var(--mono); font-size:12.5px; color:var(--ink3); margin-bottom:14px; }
-.head h1 { font-family:var(--sans); font-weight:700; font-size:clamp(34px,6vw,50px); letter-spacing:-.03em; line-height:1.05; margin-bottom:16px; }
-.head .mission { font-size:20px; color:var(--ink2); line-height:1.5; max-width:560px; }
-.head .note { font-size:15px; color:var(--ink3); margin-top:18px; max-width:560px; }
-.head .note a { font-weight:500; }
+/* intro caption */
+.caption { position:fixed; z-index:20; left:24px; bottom:22px; max-width:340px; pointer-events:none; }
+.caption .k { font-family:var(--mono); font-size:11.5px; color:var(--ink3); letter-spacing:.04em; text-transform:uppercase; }
+.caption h1 { font-family:var(--sans); font-size:19px; font-weight:600; letter-spacing:-.01em; line-height:1.35; margin-top:6px; color:var(--ink2); }
+.caption h1 b { color:var(--ink); font-weight:700; }
 
-/* jump nav */
-.jump { display:flex; flex-wrap:wrap; gap:8px 16px; padding:26px 0 8px; margin-top:20px; border-top:1px solid var(--hair); font-family:var(--sans); font-size:13px; }
-.jump a { color:var(--ink2); }
+/* the field */
+.field { position:absolute; inset:0; overflow:hidden;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size:180px 180px; }
+[data-theme="day"] .field, [data-theme="sepia"] .field { background-blend-mode:overlay; }
+[data-theme="night"] .field { background-blend-mode:soft-light; }
 
-/* sections */
-section { padding-top:56px; }
-section h2 { font-family:var(--sans); font-weight:650; font-size:22px; letter-spacing:-.015em; padding-bottom:6px; margin-bottom:6px; border-bottom:1px solid var(--hair); }
-section .cat-sub { font-family:var(--sans); font-size:13.5px; color:var(--ink3); margin-bottom:20px; }
+.node { position:absolute; transform:translate(-50%,-50%); display:grid; place-items:center;
+  background:none; border:0; cursor:pointer; padding:0; animation:drift var(--dur) ease-in-out var(--del) infinite; }
+.node .bubble { grid-area:1/1; width:var(--r); height:var(--r); border-radius:50%;
+  background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--ink) calc(6% + var(--w)*5%),transparent), color-mix(in srgb,var(--ink) calc(3% + var(--w)*3%),transparent));
+  transition:transform .25s, background .25s; }
+.node .label { grid-area:1/1; font-family:var(--mono); font-weight:500; font-size:var(--f);
+  letter-spacing:.02em; text-transform:uppercase; color:var(--ink2); white-space:nowrap;
+  transition:color .2s, transform .25s; text-shadow:0 1px 0 color-mix(in srgb,var(--bg) 60%,transparent); }
+.node:hover .label { color:var(--ink); }
+.node:hover .bubble { transform:scale(1.14); background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--accent) 34%,transparent), color-mix(in srgb,var(--accent) 12%,transparent)); }
+.node.on .label { color:var(--accent); }
+.node.on .bubble { background:radial-gradient(circle at 38% 34%, color-mix(in srgb,var(--accent) 42%,transparent), color-mix(in srgb,var(--accent) 16%,transparent)); }
+.node.dim { opacity:.28; }
 
-/* entries */
-dl { margin:0; }
-.entry { padding:16px 0; border-bottom:1px solid var(--hair); }
-.entry:last-child { border-bottom:0; }
-dt { font-family:var(--mono); font-weight:500; font-size:16px; color:var(--ink); margin-bottom:5px; }
-dt .cmd { color:var(--ink3); }
-dt a.src { float:right; font-family:var(--sans); font-size:12px; font-weight:400; color:var(--ink3); }
-dt a.src:hover { color:var(--accent); text-decoration:none; }
-dd { margin:0; font-size:15.5px; color:var(--ink2); line-height:1.62; }
-dd b { color:var(--ink); font-weight:600; }
+@keyframes drift {
+  0%,100% { transform:translate(-50%,-50%); }
+  50%     { transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))); }
+}
 
-footer.page { margin-top:72px; border-top:1px solid var(--hair); padding:26px 0 0; font-family:var(--sans); font-size:13px; color:var(--ink3); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+/* definition card */
+.card { position:fixed; z-index:40; right:24px; bottom:22px; width:min(380px,calc(100vw - 48px));
+  background:var(--bg2); border:1px solid var(--hair); border-radius:14px; padding:20px 22px;
+  box-shadow:0 18px 50px -18px rgba(0,0,0,.28); transform:translateY(14px); opacity:0; pointer-events:none;
+  transition:opacity .22s, transform .22s; }
+.card.show { transform:translateY(0); opacity:1; pointer-events:auto; }
+.card .cat { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); }
+.card .term { font-family:var(--mono); font-weight:500; font-size:19px; color:var(--ink); margin:4px 0 10px; }
+.card .def { font-size:15px; line-height:1.6; color:var(--ink2); }
+.card .row { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
+.card .row a { font-family:var(--sans); font-size:13px; font-weight:500; }
+.card .close { font-family:var(--sans); font-size:12px; color:var(--ink3); background:none; border:0; cursor:pointer; }
+.card .close:hover { color:var(--ink); }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <div class="brand"><a href="./" style="color:inherit;text-decoration:none">ff-team-skills</a> <span>/ dictionary</span></div>
+  <div class="brand"><a href="./">ff-team-skills</a> <span>/ dictionary</span></div>
   <div class="controls">
     <div class="ctl">
       <a href="./">Home</a><a href="./guide.html">Guide</a><a href="./dictionary.html" class="active">Dictionary</a>
@@ -78,121 +87,149 @@ footer.page { margin-top:72px; border-top:1px solid var(--hair); padding:26px 0 
     <div class="ctl hide-sm" id="theme-ctl">
       <button data-v="day">Day</button><button data-v="sepia">Sepia</button><button data-v="night">Night</button>
     </div>
-    <div class="ctl hide-sm" id="face-ctl">
-      <button data-v="sans">Sans</button><button data-v="serif">Serif</button>
-    </div>
-    <a class="gh" href="https://github.com/nkb-bd/ff-team-skills">GitHub ↗</a>
+    <a class="gh hide-sm" href="https://github.com/nkb-bd/ff-team-skills">GitHub ↗</a>
   </div>
 </div>
 
-<div class="wrap">
+<div class="field" id="field"></div>
 
-  <header class="head">
-    <div class="kicker">The ff-team-skills Dictionary</div>
-    <h1>The vocabulary of the skill system, in plain English.</h1>
-    <p class="mission">Every skill and every term the library uses to build, review, and ship WordPress-plugin work with Claude Code — one line each.</p>
-    <p class="note">Looking for the full walkthrough instead? Read the <a href="./guide.html">field guide</a> or start from the <a href="./">home page</a>.</p>
-    <nav class="jump">
-      <a href="#vocabulary">Vocabulary</a>
-      <a href="#orchestrators">Orchestrators</a>
-      <a href="#plan">Plan &amp; align</a>
-      <a href="#build">Build</a>
-      <a href="#review">Review &amp; quality</a>
-      <a href="#ship">Ship &amp; setup</a>
-    </nav>
-  </header>
+<div class="caption">
+  <div class="k">The ff-team-skills Dictionary</div>
+  <h1>The vocabulary of the skill system, in plain English. <b>Tap a bubble.</b></h1>
+</div>
 
-  <section id="vocabulary">
-    <h2>Vocabulary</h2>
-    <p class="cat-sub">The concepts the skills are built out of.</p>
-    <dl>
-      <div class="entry"><dt>Detector</dt><dd>One parallel review lens in <code>pre-merge-review</code> — accessibility, async races, permissions, and four others — each scanning the diff for its own class of defect.</dd></div>
-      <div class="entry"><dt>Dispatch</dt><dd>Choosing the right skill from what the user wants. Start from the intent (<b>"fix this bug"</b>), not from the skill list.</dd></div>
-      <div class="entry"><dt>Gate</dt><dd>An explicit approval checkpoint between phases. Work does not advance until the gate is cleared — ceremony that scales with the tier.</dd></div>
-      <div class="entry"><dt>Orchestrator</dt><dd>A composite skill that sequences other skills and owns the phase order. <code>new-feature</code> is the one orchestrator; everything else is a specialist.</dd></div>
-      <div class="entry"><dt>Seam</dt><dd>The real call site a failing test must exercise. The <b>correct-seam check</b> in <code>tdd</code> rejects a test that passes without touching the actual bug.</dd></div>
-      <div class="entry"><dt>Specialist</dt><dd>A single-purpose skill you can call directly for standalone work, or that the orchestrator invokes as one step.</dd></div>
-      <div class="entry"><dt>Tier</dt><dd>The 5-step size classification (trivial → breaking) that decides how much ceremony a change gets. A typo skips everything; a breaking change hardens every gate.</dd></div>
-    </dl>
-  </section>
-
-  <section id="orchestrators">
-    <h2>Orchestrators</h2>
-    <p class="cat-sub">Sequence the work and own the phase order.</p>
-    <dl>
-      <div class="entry"><dt><span class="cmd">$</span>new-feature<a class="src" href="./guide.html#new-feature">guide ↗</a></dt><dd>End-to-end workflow for a new plugin feature. Six phases with approval gates: <b>triage → align → plan → spec → build → review → ship</b>. Decides which specialists to invoke and when.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>rigorous-coding-workflow<a class="src" href="./guide.html#rigorous-coding-workflow">guide ↗</a></dt><dd>The principles layer under <code>new-feature</code> — plan before executing, use subagents for context hygiene, capture lessons, verify before done, push for elegance.</dd></div>
-    </dl>
-  </section>
-
-  <section id="plan">
-    <h2>Plan &amp; align</h2>
-    <p class="cat-sub">Sharpen the plan before any code is written.</p>
-    <dl>
-      <div class="entry"><dt><span class="cmd">$</span>design-an-interface<a class="src" href="./guide.html#design-an-interface">guide ↗</a></dt><dd>Generate three-plus radically different interface designs for a module via parallel sub-agents, each with a divergent constraint. Compare, pick, record.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>grill-me<a class="src" href="./guide.html#grill-me">guide ↗</a></dt><dd>A relentless plan interview that resolves every branch of the decision tree until you and the agent share one understanding. Pure alignment, no doc updates.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>grill-with-docs<a class="src" href="./guide.html#grill-with-docs">guide ↗</a></dt><dd>Grilling that stress-tests a plan against the project's domain model — <code>CONTEXT.md</code>, ADRs — and updates the docs inline as decisions crystallise.</dd></div>
-    </dl>
-  </section>
-
-  <section id="build">
-    <h2>Build</h2>
-    <p class="cat-sub">Write the change — and stay grounded while doing it.</p>
-    <dl>
-      <div class="entry"><dt><span class="cmd">$</span>bug-fix<a class="src" href="./guide.html#bug-fix">guide ↗</a></dt><dd>The canonical bug workflow. <b>Fix mode:</b> reproduce → minimise → hypothesise → instrument → fix → regression-test. <b>Find mode:</b> a plugin-wide discovery sweep with a Finder → Verifier → Feedback loop.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>source-driven-development<a class="src" href="./guide.html#source-driven-development">guide ↗</a></dt><dd>Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged <code>UNVERIFIED:</code> so it's never silently asserted.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>tdd<a class="src" href="./guide.html#tdd">guide ↗</a></dt><dd>Test-driven development — red-green-refactor with the correct-seam check: the failing test must exercise the bug pattern at the real call site.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>zoom-out<a class="src" href="./guide.html#zoom-out">guide ↗</a></dt><dd>A higher-level map of an unfamiliar code area for when you're lost mid-task.</dd></div>
-    </dl>
-  </section>
-
-  <section id="review">
-    <h2>Review &amp; quality</h2>
-    <p class="cat-sub">Judge code before it merges — and deepen it after.</p>
-    <dl>
-      <div class="entry"><dt><span class="cmd">$</span>doubt-driven-development<a class="src" href="./guide.html#doubt-driven-development">guide ↗</a></dt><dd>Adversarial fresh-context review for irreversible decisions: <b>CLAIM → EXTRACT → DOUBT → RECONCILE → STOP</b>, spawning a clean-context skeptic whose job is to refute.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>explain-this<a class="src" href="./guide.html#explain-this">guide ↗</a></dt><dd>Teaches a file, feature, or PR to mastery — a running coverage checklist, five-whys on every decision, and eli5 / eli14 / intern depth levels. Quizzes are opt-in.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>improve-codebase-architecture<a class="src" href="./guide.html#improve-codebase-architecture">guide ↗</a></dt><dd>Finds deepening and refactoring opportunities informed by <code>CONTEXT.md</code> domain language and ADRs. The post-merge home for a mid-feature refactor itch.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>plugin-audit<a class="src" href="./guide.html#plugin-audit">guide ↗</a></dt><dd>A deep WordPress-plugin audit — security, optimization, dead code, UI-to-DB traceability — producing evidence-backed findings and a severity-ranked remediation backlog.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>pre-merge-review<a class="src" href="./guide.html#pre-merge-review">guide ↗</a></dt><dd>The canonical pre-merge review. <b>Full:</b> seven parallel detectors plus sequential pattern passes. <b>Light:</b> pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.</dd></div>
-    </dl>
-  </section>
-
-  <section id="ship">
-    <h2>Ship &amp; setup</h2>
-    <p class="cat-sub">Package the work and wire up the repo.</p>
-    <dl>
-      <div class="entry"><dt><span class="cmd">$</span>agents-onboarding<a class="src" href="./guide.html#agents-onboarding">guide ↗</a></dt><dd>Create or refresh <code>AGENTS.md</code> onboarding docs so coding agents behave consistently in a repo.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>pr-descriptor<a class="src" href="./guide.html#pr-descriptor">guide ↗</a></dt><dd>A why-first PR description built from the actual git evidence, filling the repo's PR template.</dd></div>
-      <div class="entry"><dt><span class="cmd">$</span>setup-code-review-graph<a class="src" href="./guide.html#setup-code-review-graph">guide ↗</a></dt><dd>Wire the code-review-graph MCP server into a repo — <code>.mcp.json</code>, the CLAUDE.md block, and the seed build — so the codebase can be queried as a structural graph.</dd></div>
-    </dl>
-  </section>
-
-  <footer class="page">
-    <span><a href="https://github.com/nkb-bd/ff-team-skills">github.com/nkb-bd/ff-team-skills</a></span>
-    <span><a href="./">Home</a> · <a href="./guide.html">Field guide</a> · <a href="./new-feature.html">new-feature manual</a></span>
-  </footer>
-
+<div class="card" id="card">
+  <div class="cat" id="c-cat"></div>
+  <div class="term" id="c-term"></div>
+  <div class="def" id="c-def"></div>
+  <div class="row">
+    <a id="c-link" href="#" style="visibility:hidden">Open in the field guide →</a>
+    <button class="close" id="c-close">Close</button>
+  </div>
 </div>
 
 <script>
-function wire(id, attr){
-  const root = document.documentElement;
-  const saved = localStorage.getItem(attr);
-  if (saved) root.setAttribute(attr, saved);
-  const box = document.getElementById(id);
-  if (!box) return;
-  const sync = () => box.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === root.getAttribute(attr)));
-  box.addEventListener('click', e => {
-    if (e.target.tagName !== 'BUTTON') return;
-    root.setAttribute(attr, e.target.dataset.v);
-    localStorage.setItem(attr, e.target.dataset.v);
-    sync();
+const NODES = [
+  // orchestrators
+  {t:'new-feature', w:3.0, cat:'Orchestrator', href:'./guide.html#new-feature', d:'End-to-end workflow for a new plugin feature. Six phases with approval gates: triage → align → plan → spec → build → review → ship. Decides which specialists to invoke and when.'},
+  {t:'rigorous-coding-workflow', w:2.1, cat:'Orchestrator', href:'./guide.html#rigorous-coding-workflow', d:'The principles layer under new-feature — plan before executing, use subagents for context hygiene, capture lessons, verify before done, push for elegance.'},
+  // build
+  {t:'tdd', w:2.5, cat:'Build', href:'./guide.html#tdd', d:'Test-driven development — red-green-refactor with the correct-seam check: the failing test must exercise the bug pattern at the real call site.'},
+  {t:'bug-fix', w:2.5, cat:'Build', href:'./guide.html#bug-fix', d:'The canonical bug workflow. Fix mode: reproduce → minimise → hypothesise → instrument → fix → regression-test. Find mode: a plugin-wide discovery sweep with a Finder → Verifier → Feedback loop.'},
+  {t:'source-driven-development', w:2.0, cat:'Build', href:'./guide.html#source-driven-development', d:"Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged UNVERIFIED: so it's never silently asserted."},
+  {t:'zoom-out', w:1.7, cat:'Build', href:'./guide.html#zoom-out', d:"A higher-level map of an unfamiliar code area for when you're lost mid-task."},
+  // review
+  {t:'pre-merge-review', w:2.8, cat:'Review', href:'./guide.html#pre-merge-review', d:'The canonical pre-merge review. Full: seven parallel detectors plus sequential pattern passes. Light: pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.'},
+  {t:'doubt-driven-development', w:2.0, cat:'Review', href:'./guide.html#doubt-driven-development', d:'Adversarial fresh-context review for irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic whose job is to refute.'},
+  {t:'plugin-audit', w:2.2, cat:'Review', href:'./guide.html#plugin-audit', d:'A deep WordPress-plugin audit — security, optimization, dead code, UI-to-DB traceability — producing evidence-backed findings and a severity-ranked remediation backlog.'},
+  {t:'improve-codebase-architecture', w:1.9, cat:'Review', href:'./guide.html#improve-codebase-architecture', d:'Finds deepening and refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for a mid-feature refactor itch.'},
+  {t:'explain-this', w:1.8, cat:'Review', href:'./guide.html#explain-this', d:'Teaches a file, feature, or PR to mastery — a running coverage checklist, five-whys on every decision, and eli5 / eli14 / intern depth levels. Quizzes are opt-in.'},
+  // plan
+  {t:'grill-with-docs', w:1.9, cat:'Plan & align', href:'./guide.html#grill-with-docs', d:"Grilling that stress-tests a plan against the project's domain model — CONTEXT.md, ADRs — and updates the docs inline as decisions crystallise."},
+  {t:'grill-me', w:1.8, cat:'Plan & align', href:'./guide.html#grill-me', d:'A relentless plan interview that resolves every branch of the decision tree until you and the agent share one understanding. Pure alignment, no doc updates.'},
+  {t:'design-an-interface', w:1.9, cat:'Plan & align', href:'./guide.html#design-an-interface', d:'Generate three-plus radically different interface designs for a module via parallel sub-agents, each with a divergent constraint. Compare, pick, record.'},
+  // ship
+  {t:'pr-descriptor', w:1.8, cat:'Ship & setup', href:'./guide.html#pr-descriptor', d:"A why-first PR description built from the actual git evidence, filling the repo's PR template."},
+  {t:'agents-onboarding', w:1.7, cat:'Ship & setup', href:'./guide.html#agents-onboarding', d:'Create or refresh AGENTS.md onboarding docs so coding agents behave consistently in a repo.'},
+  {t:'setup-code-review-graph', w:1.7, cat:'Ship & setup', href:'./guide.html#setup-code-review-graph', d:'Wire the code-review-graph MCP server into a repo — .mcp.json, the CLAUDE.md block, the seed build — so the codebase can be queried as a structural graph.'},
+  // vocabulary
+  {t:'orchestrator', w:1.6, cat:'Vocabulary', href:null, d:'A composite skill that sequences other skills and owns the phase order. new-feature is the one orchestrator; everything else is a specialist.'},
+  {t:'specialist', w:1.5, cat:'Vocabulary', href:null, d:'A single-purpose skill you can call directly for standalone work, or that the orchestrator invokes as one step.'},
+  {t:'gate', w:1.5, cat:'Vocabulary', href:null, d:'An explicit approval checkpoint between phases. Work does not advance until the gate is cleared — ceremony that scales with the tier.'},
+  {t:'tier', w:1.5, cat:'Vocabulary', href:null, d:'The 5-step size classification (trivial → breaking) that decides how much ceremony a change gets. A typo skips everything; a breaking change hardens every gate.'},
+  {t:'detector', w:1.5, cat:'Vocabulary', href:null, d:'One parallel review lens in pre-merge-review — accessibility, async races, permissions, and four others — each scanning the diff for its own class of defect.'},
+  {t:'seam', w:1.4, cat:'Vocabulary', href:null, d:'The real call site a failing test must exercise. The correct-seam check in tdd rejects a test that passes without touching the actual bug.'},
+  {t:'dispatch', w:1.4, cat:'Vocabulary', href:null, d:'Choosing the right skill from what the user wants. Start from the intent ("fix this bug"), not from the skill list.'},
+  {t:'phase', w:1.4, cat:'Vocabulary', href:null, d:'One numbered stage of new-feature — triage, align, plan, spec, build, review, ship — separated by approval gates.'},
+  {t:'ceremony', w:1.3, cat:'Vocabulary', href:null, d:'The amount of process a change gets. It scales with the tier: a typo gets none, a breaking change gets every gate.'},
+  {t:'subagent', w:1.4, cat:'Vocabulary', href:null, d:'A separate agent spawned to do focused work in its own clean context, keeping the main session uncluttered — the engine of context hygiene.'},
+  {t:'regression test', w:1.3, cat:'Vocabulary', href:null, d:"A test added alongside a fix that fails on the old code and passes on the new, so the bug can't silently return."},
+  {t:'spec', w:1.3, cat:'Vocabulary', href:null, d:'The written plan for a change, produced in the plan/spec phase via openspec before any code is built.'},
+  {t:'openspec', w:1.3, cat:'Vocabulary', href:null, d:'The spec system new-feature uses to record a change’s plan, then archives once the work ships.'},
+  {t:'artifact', w:1.3, cat:'Vocabulary', href:null, d:'A durable output — spec, report, PR description — that carries knowledge forward as the project’s memory.'},
+  {t:'remediation backlog', w:1.3, cat:'Vocabulary', href:null, d:'The severity-ranked list of fixes plugin-audit produces from its findings.'},
+];
+
+const field = document.getElementById('field');
+const card = document.getElementById('card');
+const els = [];
+
+function rngFactory(seed){ let s = seed >>> 0; return () => { s = (s*1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }; }
+
+function build(){
+  field.innerHTML = '';
+  els.length = 0;
+  NODES.forEach((nd, i) => {
+    const b = document.createElement('button');
+    b.className = 'node';
+    b.style.setProperty('--w', nd.w);
+    b.style.setProperty('--r', (20 + nd.w*17) + 'px');
+    b.style.setProperty('--f', (11.5 + nd.w*1.9) + 'px');
+    b.innerHTML = '<span class="bubble"></span><span class="label">' + nd.t + '</span>';
+    b.addEventListener('click', e => { e.stopPropagation(); select(i); });
+    field.appendChild(b);
+    els.push(b);
   });
+  layout();
+}
+
+function layout(){
+  const W = field.clientWidth, H = field.clientHeight;
+  const n = NODES.length;
+  const aspect = Math.max(0.4, W / H);
+  const cols = Math.max(3, Math.round(Math.sqrt(n * aspect)));
+  const rows = Math.ceil(n / cols);
+  const rnd = rngFactory(20260720);
+  const marginX = 0.055, marginY = 0.14;
+  els.forEach((b, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const cw = (1 - marginX*2) / cols, ch = (1 - marginY*2) / rows;
+    const x = marginX + (col + 0.5) * cw + (rnd() - 0.5) * cw * 0.72;
+    const y = marginY + (row + 0.5) * ch + (rnd() - 0.5) * ch * 0.72;
+    b.style.left = (x * 100) + '%';
+    b.style.top  = (y * 100) + '%';
+    b.style.setProperty('--dx', ((rnd() - 0.5) * 14).toFixed(1) + 'px');
+    b.style.setProperty('--dy', ((rnd() - 0.5) * 14).toFixed(1) + 'px');
+    b.style.setProperty('--dur', (7 + rnd() * 7).toFixed(1) + 's');
+    b.style.setProperty('--del', (-rnd() * 8).toFixed(1) + 's');
+  });
+}
+
+let current = -1;
+function select(i){
+  current = i;
+  const nd = NODES[i];
+  els.forEach((b, j) => { b.classList.toggle('on', j === i); b.classList.toggle('dim', j !== i); });
+  document.getElementById('c-cat').textContent = nd.cat;
+  document.getElementById('c-term').textContent = nd.t;
+  document.getElementById('c-def').textContent = nd.d;
+  const link = document.getElementById('c-link');
+  if (nd.href){ link.href = nd.href; link.style.visibility = 'visible'; }
+  else { link.style.visibility = 'hidden'; }
+  card.classList.add('show');
+}
+function deselect(){
+  current = -1;
+  els.forEach(b => b.classList.remove('on', 'dim'));
+  card.classList.remove('show');
+}
+document.getElementById('c-close').addEventListener('click', deselect);
+field.addEventListener('click', deselect);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') deselect(); });
+
+let rt;
+window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 150); });
+build();
+
+function wireTheme(){
+  const root = document.documentElement, attr = 'data-theme';
+  const saved = localStorage.getItem(attr); if (saved) root.setAttribute(attr, saved);
+  const box = document.getElementById('theme-ctl');
+  const sync = () => box.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === root.getAttribute(attr)));
+  box.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') return; root.setAttribute(attr, e.target.dataset.v); localStorage.setItem(attr, e.target.dataset.v); sync(); });
   sync();
 }
-wire('theme-ctl', 'data-theme');
-wire('face-ctl', 'data-face');
+wireTheme();
 </script>
 </body>
 </html>

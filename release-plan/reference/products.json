@@ -1,0 +1,23 @@
+{
+  "_note": "Folder names live under <plugins_root>/ where plugins_root is the wp-content/plugins dir resolved from the current working directory. board_project_id / board_url are for the optional FluentBoards phase; null means ask the user. Extend this list for new products.",
+  "products": {
+    "fluent-player": {
+      "free_dir": "fluent-player",
+      "pro_dir": "fluent-player-pro",
+      "base_branch": "dev",
+      "release_day": "3rd Tuesday",
+      "board_project_id": 45,
+      "board_url": "https://lounge.authlab.io/projects#/boards/45",
+      "aliases": ["player", "fluentplayer", "fp"]
+    },
+    "fluentform": {
+      "free_dir": "fluentform",
+      "pro_dir": "fluentformpro",
+      "base_branch": "dev",
+      "release_day": "2nd Tuesday",
+      "board_project_id": null,
+      "board_url": null,
+      "aliases": ["fluent-form", "fluentforms", "ff"]
+    }
+  }
+}
