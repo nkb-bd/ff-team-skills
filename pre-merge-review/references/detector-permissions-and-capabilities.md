@@ -11,6 +11,20 @@ direction matters:
 - UI gate is broader than API gate → menu item appears for users who get a 403 when they click it (frustration, not a security bug, but a UX bug).
 - **UI gate is narrower than API gate → privilege escalation**: users who can't see the menu item can still call the API and the API allows it. **This is the dangerous direction**.
 
+**Stored-resource authorization (authorize one, act on another).** A policy that
+resolves `form_id` from the stored resource selected by `entry_id`/`feed_id` does
+NOT protect a *separate* request-supplied `form_id` the controller then uses for
+reads/mutations. Authorize the resource by its OWN stored id; reject any request
+id that disagrees with the stored owner; scope every read/count/totals/bulk/delete
+branch to that stored id (report/analytics grouping branches are a frequent leak).
+
+**Refute the clean verdict.** Before recording "no permission issue" on
+authorization, payments, or a destructive operation, adversarially try to disprove
+it — a confident clean on money or access control is the verdict most likely to be
+a false-negative. For payments, amount+currency agreement is not proof: verify the
+provider transaction *identity* is bound to the stored order and re-checked at
+confirmation, across every gateway.
+
 ---
 
 ## Policy capability vs UI menu visibility

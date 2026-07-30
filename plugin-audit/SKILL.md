@@ -104,6 +104,18 @@ Every finding must include:
 
 ## Security Checks
 
+**Methodology (mandatory).** Run the sweep with at least TWO orthogonal lenses
+over the same surface — a persona / abuse-case lens AND an authorization-contract
+lens (authorize the resource by its OWN stored id; reject any request id that
+disagrees; every bulk/delete branch carries the read branch's scope filter) —
+because a single lens reliably misses what another catches. Then adversarially
+REFUTE any "clean" / "no findings" verdict on payments, authorization, or
+destructive operations before accepting it: a confident clean on money or access
+control is the verdict most likely to be a false-negative. For payments
+specifically, amount+currency agreement is NOT proof of safety — verify the
+provider transaction IDENTITY is bound to the stored order and re-checked at
+confirmation, across EVERY gateway.
+
 Check at minimum:
 
 - Missing or incorrect authorization/capability checks (`current_user_can`).
