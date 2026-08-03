@@ -14,6 +14,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | Skill | Purpose |
 |---|---|
 | `new-feature` | End-to-end composite workflow for a new plugin feature. Six phases with approval gates: triage (tier pick) → align (`grill-with-docs`) → plan (`openspec` + `design-an-interface`) → spec → build (`tdd`) → review (`pre-merge-review`) → ship (`pr-descriptor` + `openspec archive`). Ceremony scales with a 5-step tier system (trivial → breaking). |
+| `check-feature` | The mirror of `new-feature` — **verifies** an existing, shipped feature end-to-end instead of building one. Walks the feature backward: locate → map the vertical slice (UI → REST → controller → policy → DB → hooks → tests) → verify behavior at runtime (`verify`) → verify correctness & security (`pre-merge-review` scoped to the slice) → verify against original intent (spec drift, success signal, extension seams, test coverage, `doubt-driven-development` refute) → re-runnable Feature Health Report. Read-only: routes fixes to `bug-fix` / `new-feature`. Depth scales with a 4-step tier system (spot → critical). |
 | `rigorous-coding-workflow` | The principles layer under `new-feature` — plan before executing, subagents for context hygiene, capture lessons, verify before done, push for elegance. Defers operational sequencing to `new-feature`. |
 
 ### Plan & align
@@ -56,6 +57,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | User intent | Skill |
 |---|---|
 | "Build feature X" / "add capability Y" | `new-feature` |
+| "Is feature X healthy" / "check/audit one shipped feature end-to-end" / "does X still work after the refactor" | `check-feature` |
 | "Fix this bug" / "diagnose this" / "X is broken" | `bug-fix` |
 | "Find bugs in this plugin" | `bug-fix find` |
 | "Review this PR" / "is this ready to merge" | `pre-merge-review` (`light` for single-file diffs) |
@@ -82,9 +84,19 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
                                     └─ unverified API claim  → source-driven-development
                                     └─ irreversible decision → doubt-driven-development
                                     └─ refactor itch         → improve-codebase-architecture (post-merge)
+
+  ┌──────────────────── check-feature (the mirror) ─────────────────────┐
+  shipped feature → locate → map slice → verify behavior (verify)
+                     → verify correctness (pre-merge-review, scoped)
+                     → verify intent (spec drift · seams · coverage · doubt-driven-development)
+                     → Feature Health Report ─┬─ defect        → bug-fix
+                                              └─ missing capability → new-feature
 ```
 
-`new-feature` decides which of these to invoke and when; invoke the others directly for standalone work.
+`new-feature` builds a feature forward through approval gates; `check-feature` walks a
+shipped one backward through evidence checks and routes any fixes back to `bug-fix` /
+`new-feature`. `new-feature` decides which sub-skills to invoke and when; invoke the
+others directly for standalone work.
 
 ## Repository layout
 
@@ -116,6 +128,7 @@ On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`)
 ## Usage examples
 
 - `Use $new-feature` — full composite workflow; announces a tier, then walks align → plan → spec → build → review → ship with gates between phases.
+- `Use $check-feature on the entry export` — announces a tier, maps the vertical slice, runs the behavior/correctness/intent passes, then writes a re-runnable Feature Health Report with a verdict and a routed fix backlog.
 - `Use $bug-fix` — "submit button does nothing on second click in Save.vue" → reproduce → fix → regression test.
 - `Use $bug-fix find` — plugin-wide sweep; only verifier-confirmed issues land in `bug-discovery-report.md`.
 - `Use $pre-merge-review` — diff against `origin/dev`; all detectors + pattern passes; re-run after fixes to mark findings `[cleared]`.
