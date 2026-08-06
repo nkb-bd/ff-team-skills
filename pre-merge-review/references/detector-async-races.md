@@ -13,7 +13,19 @@ a real autharif review in the WPManageNinja corpus.
 A request fired with state `{ id: A }` returns later than a request fired with state
 `{ id: B }`. If both writes go to the same reactive field, the later request can
 overwrite the current view with stale data. Classic in summary panes, search-as-you-type,
-and "view contact" flows.
+and "view contact" flows — and equally in **form-selector / list-filter switches and
+paginated tables**, where the selector or param that seeded the request changes before
+the response lands.
+
+**Severity floor — High, never Medium.** A stale response that commits another entity's
+data into the visible view (form A's entries under form B's heading, contact X's summary
+in contact Y's pane) is *silent wrong behaviour the user cannot detect* — not an
+internal-correctness nit. Floor it at **High**; escalate to **Blocking** when the wrong
+data crosses a user / tenant / permission boundary. Do not re-file as Medium because the
+trigger window ("only on a rapid switch") is narrow — probability discounts at most one
+tier and never past the silent-wrong-data floor. A `finally` that clears `loading`
+without the same request-id guard is part of the *same* finding: an older response hides
+the spinner while the current request is still pending.
 
 **Smell patterns:**
 - `await api.get(...)` followed by `this.summary = response.data` with no request-id check
@@ -40,6 +52,7 @@ this.contact = data
 
 **Corpus evidence:**
 - "Stale async response can overwrite current contact summary" (`fluent-crm#1820`, `ProfileAiSummary.vue:104`)
+- "Stale form request overwrites the selected form's entries table" (`fluentform-dev#1111`, `AllEntries.vue::loadFormEntries` — form-selector switch; an internal review under-rated this to Medium and autharif re-flagged it REQUEST_CHANGES. Fixed with a monotonic request token guarding every state commit **and** the `finally`).
 
 ---
 
@@ -200,5 +213,5 @@ When this criteria reference is loaded, the detector MUST:
 1. Walk every changed `.vue` / `.jsx` / `.tsx` / `.js` / `.ts` file.
 2. Quickly skip files with no async surface — grep for `await`, `.then(`, `axios`, `fetch(`, `setTimeout(`, `setInterval(`, `Promise`. If none, no findings.
 3. For each async surface, walk the rules above.
-4. Severity defaults to `Blocking` for cancel-races and concurrent loops; `High` for stale-overwrites and cancel-orphans; `Medium` for double-count and stale-preview.
+4. Severity: `Blocking` for cancel-races and concurrent loops; **`High` FLOOR for stale-overwrites** — never demote to Medium; committing another entity's data to the view is silent wrong behaviour, and it escalates to `Blocking` when the wrong data crosses a user / tenant / permission boundary — plus cancel-orphans at `High`; `Medium` only for double-count and stale-preview.
 5. Emit findings with `category: "async-state"`. Cap at 50.

@@ -124,6 +124,8 @@ classify_headline() {
 
   # async-state
   if [[ "$hl" == *stale*async* || "$hl" == *stale*response* || "$hl" == *"stale offset"* \
+     || "$hl" == *stale*overwrite* || "$hl" == *stale*request* || "$hl" == *overwrite*view* \
+     || "$hl" == *out-of-order* || "$hl" == *"out of order"* \
      || "$hl" == *race* || "$hl" == *concurrent* \
      || "$hl" == *cancel*orphan* || "$hl" == *cancel*race* \
      || "$hl" == *retry*concurrent* || "$hl" == *progress*double* \

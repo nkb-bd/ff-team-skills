@@ -462,6 +462,15 @@ Non-obvious things done well — prevents review feeling adversarial.
 - **Self-incrimination check:** if your evidence sentence states the failure
   scenario is the feature's primary use case ("exactly the X scenario"), the
   finding cannot be a Suggestion — re-tier it.
+- **Stale-async floor:** a stale / out-of-order async response that commits state
+  derived from a now-changed selector, prop, or param (search term, selected id,
+  page number) is *silent wrong behaviour* — the user sees another entity's data
+  with no error. That is the Blocking/High row, never "no user-visible breakage"
+  (Medium). Apply the `async-races` pack's **High floor** (Blocking across a
+  user/tenant/permission boundary); do not downgrade to Medium because the
+  trigger window is narrow. "It's just an internal race" is the exact wording
+  that let `fluentform-dev#1111` ship a Medium that autharif re-flagged as a
+  merge blocker.
 
 ### Resolution standard (re-runs and fix verification)
 
