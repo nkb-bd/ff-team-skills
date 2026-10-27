@@ -27,7 +27,8 @@ that are not on its base.
 1. `git status --porcelain` must be empty. Uncommitted work would be mixed into the mutations and
    could be lost on restore: stop and ask the user to commit or stash it.
 2. HEAD must be the commit under check or contain it. Record `git rev-parse HEAD`.
-3. Find the test command in the repo's own docs (CLAUDE.md, AGENTS.md, README.md, `tests/README.md`). If the proof names
+3. Find the test command in the repo's own docs (CLAUDE.md, AGENTS.md, README.md, `tests/README.md`).
+   Read all of them and use the narrowest documented command that runs just the named suite. If the proof names
    a suite but the repo does not say how to run it, stop and ask; never guess a command that could
    touch a live site's data.
 
@@ -40,7 +41,8 @@ continue to the next claim.
 
 Read every `Proof of catch` / `Proof-of-catch` section and its `Each later guard was removed…` line.
 One row per claimed red. Also check `Cases added: <n> (<file>)` against `git show --stat`: the named
-test file must be in the commit and hold that many new cases; a mismatch is its own row.
+test file must be in the commit and hold that many new cases; a mismatch is its own row. No
+`Cases added:` line means no row.
 
 1. **Mutate only what the claim covers.**
    - Whole fix: reverse the commit's non-test changes. First list its test files (`git show --stat`:
@@ -61,6 +63,8 @@ test file must be in the commit and hold that many new cases; a mismatch is its 
    the claim's green half fails: say so.
 
 Finally run the gate the commit claims (`Gate: …`) once on the restored tree and compare the counts.
+Compare passed and failed; report skipped as seen. A claim with no counts ("10 tiers passed") is
+checked at the level it states.
 
 ## Hard limits
 
