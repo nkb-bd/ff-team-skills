@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# proof-of-catch: a commit that adds or changes tests must carry its evidence.
+# Install: cp shared/hooks/commit-msg <repo>/.git/hooks/commit-msg && chmod +x it. Bypass: --no-verify.
+[ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ] && exit 0
+git diff --cached --name-only --diff-filter=AM | grep -qE '(^|/)tests?/|\.(test|spec)\.[jt]s$|Test\.php$' || exit 0
+grep -qiE '^(proof[ -]of[ -]catch|cases added)' "$1" && exit 0
+echo "✗ This commit changes tests but has no 'Proof of catch:' or 'Cases added:' section." >&2
+echo "  Add the red output per the proof-of-catch skill, or commit with --no-verify and say why." >&2
+exit 1

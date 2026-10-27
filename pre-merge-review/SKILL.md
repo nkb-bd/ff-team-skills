@@ -23,6 +23,8 @@ Two modes:
 - Lead with `READY`, `NOT READY`, or `INCOMPLETE VERIFICATION`. Never equate “no findings” with “ready” when scope or required verification is incomplete.
 - Preserve user changes. Record staged, unstaged, and untracked files before running tools; never hide them behind a committed-branch diff.
 - Treat tool absence, network failure, skipped tests, stale graph data, and unavailable sibling repositories as coverage gaps, not passing evidence.
+- If you wrote the change under review, run the review in a fresh subagent that gets only the diff, so your own reasoning does not anchor it.
+- A commit's `Proof of catch` section is a claim, not evidence, until `$prove-it` has re-run it; list unchecked proofs under coverage gaps and recommend `$prove-it`.
 
 ## Resolve review scope
 
