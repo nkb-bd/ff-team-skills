@@ -79,7 +79,7 @@ Needs a human decision: <anything ambiguous>
 ```
 
 Real numbers from real runs only. Drop a section that is empty; never write "all tests pass"
-without the counts.
+without the counts. `$prove-it` re-runs these claims before merge, so a guessed number gets caught.
 
 ## 5. Lock the class, not just the instance
 
@@ -94,7 +94,7 @@ header) and whether a script can spot it. If it can, add a gate in the same bran
 - **Ratchet budget** when old code already breaks the rule and fixing all of it is out of scope.
   Count the violations over fixed scan paths, store the count in the lint, and fail unless the
   count **equals** the budget, printing the new count. Above it is a new violation; below it means
-  lower the budget now, so every fix locks its gain. A count cannot see one hit swapped for another;
+  lower the budget now, so every fix locks its gain (ready-made: `shared/scripts/ratchet-lint.sh`). A count cannot see one hit swapped for another;
   list the known hits instead when that matters.
 
 Every gate needs:

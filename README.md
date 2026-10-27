@@ -41,6 +41,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 |---|---|
 | `pre-merge-review` | Canonical pre-merge review. **Full (default):** 7 parallel detectors (accessibility, async-races, ui-to-backend-wiring, permissions, backwards-compat, error-handling-ux, performance + data integrity) plus sequential pattern passes (WP-PHP / JS / Vue / state-machine + adversarial inputs). **Light:** sequential passes only, for tiny diffs. Re-runnable — clears resolved findings. |
 | `proof-of-catch` | Evidence discipline for every test and guard: seen red on the broken code (each guard of a fix in turn), real DB and self-cleaning fixtures, never weakened, red output and gate numbers in the commit body; each bug class locked by a lint, inventory gate or ratchet budget. Called by `tdd`, `bug-fix` and `new-feature`. |
+| `prove-it` | Second pair of eyes for evidence: runs as its own Opus subagent, re-runs each `Proof of catch` claim in a commit (break only what it covers → red for the stated reason → restore → green) and reports confirmed / not reproduced / wrong reason / could not run. Refuses a dirty tree. |
 | `doubt-driven-development` | Adversarial fresh-context review for high-stakes / irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic to refute. `new-feature` calls it at the Breaking-tier spec gate, in `/build auto`, and on non-trivial review fixes. |
 | `plugin-audit` | Deep WordPress plugin audit: security, optimization, dead code, UI-to-DB traceability. Evidence-backed findings, severity-ranked remediation backlog. |
 | `improve-codebase-architecture` | Find deepening/refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for mid-feature refactor itches. |
@@ -72,6 +73,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | "Where can the architecture improve" | `improve-codebase-architecture` |
 | "Is this safe to ship" / "second-guess this decision" | `doubt-driven-development` |
 | "Is this test real" / "prove the fix" / "write the commit body" | `proof-of-catch` |
+| "Prove it" / "check the proof" / "is this evidence real" | `prove-it` |
 | "Verify how this API behaves" / "check the docs before coding" | `source-driven-development` |
 
 ## How the skills chain
@@ -79,7 +81,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 ```text
                          ┌──────────────────── new-feature ────────────────────┐
   issue / PRD / intent → triage → grill-with-docs → openspec (+ design-an-interface)
-                          → spec → tdd (+ proof-of-catch) → pre-merge-review → pr-descriptor → ship
+                          → spec → tdd (+ proof-of-catch) → pre-merge-review (+ prove-it) → pr-descriptor → ship
                                     │  (spec grounds APIs via source-driven-development;
                                     │   Breaking-tier decisions pass doubt-driven-development)
                                     └─ bug surfaces mid-build → bug-fix (+ proof-of-catch)
@@ -107,8 +109,11 @@ others directly for standalone work.
 ff-team-skills/
 ├── <skill-name>/            SKILL.md (+ agents/, references/ when applicable)
 ├── new-feature/             SKILL.md + AUDIT.md (illustrated manual lives in docs/)
-├── docs/                    GitHub Pages: index.html (landing) · guide.html · dictionary.html · new-feature.html
+├── docs/                    GitHub Pages: index.html (landing) · guide.html · flow.html · new-feature.html
 ├── shared/scripts/          audit-autharif.sh — weekly drift check for pre-merge-review criteria packs
+│                            ratchet-lint.sh — ratchet budget lint for proof-of-catch §5
+│                            test-gates.sh — self-test for ratchet-lint.sh and hooks/commit-msg
+├── shared/hooks/            commit-msg — rejects a commit that changes tests without proof-of-catch evidence
 ├── _flows/                  Flow definitions
 ├── _inactive/               Shelved skills — unused but kept. Move back to root to re-activate.
 └── _archived/               Superseded skills (SKILL.md renamed .bak so they don't register):
@@ -139,7 +144,61 @@ On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`)
 - `Use $plugin-audit` — produce `plugin-audit.md` from the bundled template.
 - `Use $pr-descriptor` — fill the repo PR template from the actual branch diff.
 - `Use $explain-this on app/Services/Transfer/TransferService.php` — checklist-driven teaching session.
+- `Use $prove-it` — re-run the proof-of-catch claims on this branch before merge.
+- `bash shared/scripts/ratchet-lint.sh 'whereRaw\(.*fc_' 3 app includes` — fail unless exactly 3 known hits remain; add the bad fixture as a path to prove it fires.
+- `cp shared/hooks/commit-msg <plugin>/.git/hooks/ && chmod +x <plugin>/.git/hooks/commit-msg` — block test commits without evidence. `bash shared/scripts/test-gates.sh` self-tests both.
 - `bash shared/scripts/audit-autharif.sh --validate` — confirm pre-merge-review criteria packs still classify the test corpus at ≥80% (skip if the script isn't on this machine).
+
+## Real-life example: one bug, start to finish
+
+Illustrative walkthrough (file names and numbers are examples). Report: *a user who can manage form A
+deletes entries of form B by sending B's entry IDs to the bulk-delete endpoint.*
+
+1. **Fix it** — `Use $bug-fix: bulk entry delete accepts entry IDs from other forms.`
+   The agent writes a failing test first (`tests/integration/entry-bulk-delete-scope.php`), sees it red,
+   then scopes the query: `->where('form_id', $formId)->whereIn('id', $ids)`.
+2. **Prove it** — `proof-of-catch` is called from bug-fix Phase 5. The fix also added a capability
+   check, so each guard is removed in turn and its case goes red. Fixtures are two forms and four
+   entries the test creates and deletes by ID in a `finally`.
+3. **Lock the class** — the same bug lives in any handler that takes an ID array without a scope.
+   An inventory gate fails when a route reads `entries[]` / `ids[]` without a scope filter; old
+   offenders sit under a ratchet budget:
+   `bash shared/scripts/ratchet-lint.sh 'whereIn\(.id., \$ids\)' 4 app` (exactly 4 known hits).
+4. **Commit** — the body carries the evidence. Forget it and the hook stops you:
+
+   ```text
+   ✗ This commit changes tests but has no 'Proof of catch:' or 'Cases added:' section.
+   ```
+
+   ```text
+   Stop bulk delete removing entries from other forms
+
+   Cases added: 3 (tests/integration/entry-bulk-delete-scope.php)
+
+   Proof of catch (fix reverted):
+     INTEGRATION: 1/3 passed, 2 failed
+     form B entry survives a delete scoped to form A  expected 2, actual 0
+   Each later guard was removed in turn and its case went red: form scope, capability check.
+
+   Gate: smoke 120/120, permissions 214/214, integration 388/388, static green.
+   ```
+
+5. **Review** — `Use $pre-merge-review`. It lists the proof as unchecked and recommends `$prove-it`.
+6. **Check the proof** — `Use $prove-it`. A fresh Opus subagent replays each claim on a clean tree:
+
+   ```text
+   | Commit  | Claim            | Mutation                            | Result         | What we saw                     |
+   |---------|------------------|-------------------------------------|----------------|---------------------------------|
+   | 4f2c9e1 | whole fix        | non-test changes reversed           | confirmed      | 1/3 passed; "form B entry ..."  |
+   | 4f2c9e1 | form scope       | removed EntryService.php:212 only   | confirmed      | 1/3 passed                      |
+   | 4f2c9e1 | capability check | removed EntryPolicy.php:48-50 only  | not reproduced | 3/3 passed with the check gone  |
+   Verdict: 2 confirmed, 1 not reproduced.
+   ```
+
+   The capability check has no case that reaches it. Add one (a subscriber gets 403), commit, and
+   re-run `$prove-it` until every row is `confirmed`. Then `Use $pr-descriptor` and open the PR.
+
+Set up once per plugin repo: `cp shared/hooks/commit-msg <plugin>/.git/hooks/ && chmod +x <plugin>/.git/hooks/commit-msg`.
 
 ## Skill conventions
 

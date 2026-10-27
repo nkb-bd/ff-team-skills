@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prove It"
+  short_description: "Re-run a commit's proof-of-catch claims and report which ones hold"
+  default_prompt: "Use $prove-it on this branch: re-run each Proof of catch claim (break only what it covers, see red, restore, see green) and report confirmed / not reproduced / wrong reason / could not run."

@@ -257,6 +257,7 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
       <div class="pills">
         <button class="pill" data-term="pre-merge-review" style="--c:var(--cat-review)"><i></i>pre-merge-review</button>
         <button class="pill" data-term="doubt-driven-development" style="--c:var(--cat-review)"><i></i>doubt-driven-development</button>
+        <button class="pill" data-term="prove-it" style="--c:var(--cat-review)"><i></i>prove-it</button>
         <button class="pill" data-term="detector"><i></i>detector</button>
       </div>
     </div>
@@ -339,6 +340,7 @@ const TERMS = {
   'source-driven-development':{cat:'Build', href:'./guide.html#source-driven-development', d:"Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged UNVERIFIED: so it's never silently asserted."},
   'zoom-out':{cat:'Build', href:'./guide.html#zoom-out', d:"A higher-level map of an unfamiliar code area for when you're lost mid-task."},
   'pre-merge-review':{cat:'Review', href:'./guide.html#pre-merge-review', d:'The canonical pre-merge review. Full: seven parallel detectors plus sequential pattern passes. Light: pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.'},
+  'prove-it':{cat:'Review', href:'./guide.html#prove-it', d:'A fresh Opus subagent that re-runs each Proof of catch claim in a commit and reports which ones hold: confirmed, not reproduced, wrong reason or could not run.'},
   'doubt-driven-development':{cat:'Review', href:'./guide.html#doubt-driven-development', d:'Adversarial fresh-context review for irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic whose job is to refute.'},
   'plugin-audit':{cat:'Review', href:'./guide.html#plugin-audit', d:'A deep WordPress-plugin audit — security, optimization, dead code, UI-to-DB traceability — producing evidence-backed findings and a severity-ranked remediation backlog.'},
   'improve-codebase-architecture':{cat:'Review', href:'./guide.html#improve-codebase-architecture', d:'Finds deepening and refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for a mid-feature refactor itch.'},

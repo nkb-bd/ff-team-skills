@@ -203,6 +203,8 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
   <a href="#pre-merge-review">pre-merge-review</a>
   <a href="#doubt-driven-development">doubt-driven-development</a>
   <a href="#proof-of-catch">proof-of-catch</a>
+  <a href="#prove-it">prove-it</a>
+  <a href="#worked-example">worked example</a>
   <a href="#plugin-audit">plugin-audit</a>
   <a href="#improve-codebase-architecture">improve-codebase…</a>
   <a href="#explain-this">explain-this</a>
@@ -233,6 +235,7 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <div class="flow-row"><span class="want">Verify how an API behaves before coding</span><span class="use">$source-driven-development</span></div>
     <div class="flow-row"><span class="want">Second-guess a high-stakes / irreversible call</span><span class="use">$doubt-driven-development</span></div>
     <div class="flow-row"><span class="want">Prove a test or fix is real</span><span class="use">$proof-of-catch</span></div>
+    <div class="flow-row"><span class="want">Check a commit's proof before merge</span><span class="use">$prove-it</span></div>
     <div class="flow-row"><span class="want">Understand unfamiliar code deeply</span><span class="use">$explain-this</span></div>
     <div class="flow-row"><span class="want">Get un-lost in a code area</span><span class="use">$zoom-out</span></div>
     <div class="flow-row"><span class="want">Find where the architecture can deepen</span><span class="use">$improve-codebase-architecture</span></div>
@@ -358,6 +361,24 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <p class="what">Evidence discipline for every test and guard an agent writes. Each test is seen red on the broken code (each guard of a multi-guard fix removed in turn), runs on the real database with its own uniquely named fixtures cleaned up in a finally, is never weakened to pass, and leaves its red output and gate numbers in the commit body. The bug's class gets a lint, inventory gate or ratchet budget so it cannot come back.</p>
     <div class="row"><span class="lbl">When</span><span class="when">Whenever a test, lint or CI guard is added or changed, and before committing a bug or security fix. tdd, bug-fix and new-feature call it for every new case.</span></div>
     <div class="row"><span class="lbl">Example</span><span class="ex">Use $proof-of-catch on this fix — revert each guard, show the red output, and draft the commit body.</span></div>
+  </div>
+
+  <div class="skill" id="prove-it">
+    <h3>prove-it</h3>
+    <p class="what">The second pair of eyes for evidence. Runs as its own Opus subagent with no memory of the work, re-runs each Proof of catch claim in a commit (break only what it covers, check red for the stated reason, restore, check green) and reports confirmed, not reproduced, wrong reason or could not run per claim. Refuses to start on a dirty tree and never commits.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Before merging a fix whose commits carry proof-of-catch sections. pre-merge-review treats an unchecked proof as a coverage gap and recommends it.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $prove-it on this branch.</span></div>
+  </div>
+
+  <div class="skill" id="worked-example">
+    <h3>Worked example: one bug, start to finish</h3>
+    <p class="what">Illustrative. Report: a user who can manage form A deletes entries of form B by sending B's entry IDs to bulk delete.</p>
+    <div class="row"><span class="lbl">1 Fix</span><span class="when"><code>$bug-fix</code> writes a failing test, sees it red, then scopes the query to the form.</span></div>
+    <div class="row"><span class="lbl">2 Prove</span><span class="when"><code>$proof-of-catch</code>: each guard (form scope, capability check) removed in turn, its case red; fixtures created and deleted by ID.</span></div>
+    <div class="row"><span class="lbl">3 Lock</span><span class="when">An inventory gate for routes that read <code>ids[]</code> without a scope; old offenders under <code>ratchet-lint.sh</code> with a budget of 4.</span></div>
+    <div class="row"><span class="lbl">4 Commit</span><span class="when">Body carries Cases added, the red output and gate numbers. Without them the <code>commit-msg</code> hook refuses the commit.</span></div>
+    <div class="row"><span class="lbl">5 Review</span><span class="when"><code>$pre-merge-review</code> lists the proof as unchecked and recommends <code>$prove-it</code>.</span></div>
+    <div class="row"><span class="lbl">6 Check</span><span class="when"><code>$prove-it</code> replays each claim: whole fix and form scope confirmed, capability check <b>not reproduced</b> (3/3 green with it removed). Add a case for it, re-run until all rows are confirmed, then open the PR.</span></div>
   </div>
 
   <div class="skill" id="plugin-audit">
