@@ -4,7 +4,8 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 
 **🏠 [Home (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — landing page: the library at a glance, grouped by what each skill does.
 **📖 [Skill Guide](https://nkb-bd.github.io/ff-team-skills/guide.html)** — illustrated guide to every skill, when to use it, and how they chain.
-**📕 [Skill Dictionary](https://nkb-bd.github.io/ff-team-skills/dictionary.html)** — every skill and term in one line of plain English.
+**📕 [Skill Flow](https://nkb-bd.github.io/ff-team-skills/flow.html)** — the workflow as a readable flow; every skill and term in one line of plain English.
+**🧪 [proof-of-catch](https://nkb-bd.github.io/ff-team-skills/guide.html#proof-of-catch)** — tests seen red, evidence in the commit, bug classes locked by a gate.
 **🗺 [new-feature illustrated manual](https://nkb-bd.github.io/ff-team-skills/new-feature.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
 ## Active skills

@@ -371,8 +371,8 @@ footer code { color: var(--phosphor-dim); }
       <span class="node">4</span>
       <div class="station-card">
         <div class="station-top"><h3>Build</h3><span class="tag always">always</span></div>
-        <p>Red-green-refactor per scenario, test at the correct seam. Full WordPress security checklist on every handler (see checks board). Commit per milestone with prefix format. New PHP class → <code>composer dump-autoload</code> + classmap grep. Bug mid-build → reproduce before hypothesising. Architecture itch → defer post-merge, don't refactor the world mid-feature.</p>
-        <div class="calls"><span class="call">$tdd</span><span class="call opt">$simplify (if available)</span><span class="call opt">$bug-fix (if bug surfaces)</span><span class="call opt">$zoom-out (if lost · if available)</span></div>
+        <p>Red-green-refactor per scenario, test at the correct seam; tick a scenario only with its red output recorded. Full WordPress security checklist on every handler (see checks board). Commit per milestone with prefix format. New PHP class → <code>composer dump-autoload</code> + classmap grep. Bug mid-build → reproduce before hypothesising. Architecture itch → defer post-merge, don't refactor the world mid-feature.</p>
+        <div class="calls"><span class="call">$tdd</span><span class="call">$proof-of-catch</span><span class="call opt">$simplify (if available)</span><span class="call opt">$bug-fix (if bug surfaces)</span><span class="call opt">$zoom-out (if lost · if available)</span></div>
       </div>
     </div>
     <div class="gate consent rv"><b>Consent</b> Never <code style="color:inherit">git push</code> without explicit consent — once-approved is not forever-approved.</div>
@@ -482,6 +482,7 @@ footer code { color: var(--phosphor-dim); }
       </div></div>
       <div class="spoke-row"><div class="spoke-phase">P4 Build</div><div class="spoke-skills">
         <span class="sk">$tdd<em>red-green-refactor at the correct seam</em></span>
+        <span class="sk">$proof-of-catch<em>each scenario seen red · evidence in the commit</em></span>
         <span class="sk cond">$simplify<em>after green · if available</em></span>
         <span class="sk cond">$bug-fix<em>if a bug surfaces · reproduce first</em></span>
         <span class="sk cond">$zoom-out<em>if lost · if available</em></span>
