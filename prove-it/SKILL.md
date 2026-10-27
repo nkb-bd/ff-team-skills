@@ -31,8 +31,9 @@ that are not on its base.
    a suite but the repo does not say how to run it, stop and ask; never guess a command that could
    touch a live site's data.
 
-Restore after **every** run with `git checkout -- <files you changed>`, then confirm
-`git status --porcelain` is empty again. If it is not, stop at once and report the files; do not
+Restore after **every** run with `git checkout -- .` (exact, because the tree started clean). A
+reversed delete or rename brings an old path back as untracked: delete only the `??` paths that
+appear in the reversed patch, never others. Then confirm `git status --porcelain` is empty again. If it is not, stop at once and report the files; do not
 continue to the next claim.
 
 ## For each claim
@@ -42,8 +43,10 @@ One row per claimed red. Also check `Cases added: <n> (<file>)` against `git sho
 test file must be in the commit and hold that many new cases; a mismatch is its own row.
 
 1. **Mutate only what the claim covers.**
-   - Whole fix: reverse the commit's non-test changes:
-     `git diff <sha>^ <sha> -- . ':!tests' ':!*test*' | git apply -R`.
+   - Whole fix: reverse the commit's non-test changes. First list its test files (`git show --stat`:
+     anything under the repo's test dirs, `*.test.*`, `*.spec.*`, `*Test.php`, any case) and exclude
+     each: `git diff <sha>^ <sha> -- . ':!<test path>'… | git apply -R`. Check with `git diff --stat`
+     that no test file changed before you run anything.
    - One named guard: remove only that guard's lines, leaving the other guards in. One diff hunk often
      holds several guards, so edit the lines directly rather than reversing a whole hunk. If you
      cannot tell which lines are the guard, mark the claim `could not run` and say why.

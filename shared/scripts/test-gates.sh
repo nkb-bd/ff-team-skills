@@ -13,8 +13,12 @@ echo "whereRaw('fc_x')" > "$t/fixtures/bad-raw.php"
 check 0 "at budget"            bash "$lint" "$p" 2 "$t/app"
 check 1 "fixture over budget"  bash "$lint" "$p" 2 "$t/app" "$t/fixtures/bad-raw.php"
 check 1 "below budget"         bash "$lint" "$p" 3 "$t/app"
-check 0 "zero hits, budget 0"  bash "$lint" "$p" 0 "$t/fixtures/none"
+mkdir -p "$t/empty"
+check 0 "zero hits, budget 0"  bash "$lint" "$p" 0 "$t/empty"
 check 2 "missing args"         bash "$lint" "$p"
+check 2 "budget not a number"  bash "$lint" "$p" two "$t/app"
+check 2 "invalid pattern"      bash "$lint" '([' 0 "$t/app"
+check 2 "missing scan path"    bash "$lint" "$p" 2 "$t/app" "$t/nope"
 
 hook="$here/hooks/commit-msg"; r="$t/repo"; git init -q "$r"
 msg() { printf '%s\n' "$1" > "$t/msg"; }
@@ -24,5 +28,10 @@ git add tests/a.php;       msg "Fix thing";                                     
 msg $'Fix thing\n\nProof of catch (fix reverted):\n  1/2 passed';                 check 0 "tests with proof" bash "$hook" "$t/msg"
 msg $'Fix thing\n\nCases added: 3';                                              check 0 "cases added"     bash "$hook" "$t/msg"
 msg $'Fix thing\n\nThis has no proof of catch yet';                              check 1 "phrase mid-line" bash "$hook" "$t/msg"
+git reset -q; mkdir -p src && echo x > src/Button.test.tsx && git add src
+msg "Fix thing";                                                                 check 1 "tsx test, no proof" bash "$hook" "$t/msg"
+git reset -q; seq 1 40 > tests/a.php; git add tests/a.php && git -c user.name=t -c user.email=t@t commit -qm init  # big enough for rename detection
+git mv tests/a.php tests/b.php && echo more >> tests/b.php && git add tests/b.php
+msg "Move thing";                                                                check 1 "renamed+edited test" bash "$hook" "$t/msg"
 
 echo "gates self-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]
