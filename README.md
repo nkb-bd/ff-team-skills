@@ -78,10 +78,10 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 ```text
                          ┌──────────────────── new-feature ────────────────────┐
   issue / PRD / intent → triage → grill-with-docs → openspec (+ design-an-interface)
-                          → spec → tdd → pre-merge-review → pr-descriptor → ship
+                          → spec → tdd (+ proof-of-catch) → pre-merge-review → pr-descriptor → ship
                                     │  (spec grounds APIs via source-driven-development;
                                     │   Breaking-tier decisions pass doubt-driven-development)
-                                    └─ bug surfaces mid-build → bug-fix
+                                    └─ bug surfaces mid-build → bug-fix (+ proof-of-catch)
                                     └─ lost in the code      → zoom-out
                                     └─ unverified API claim  → source-driven-development
                                     └─ irreversible decision → doubt-driven-development
