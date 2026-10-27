@@ -41,8 +41,8 @@ continue to the next claim.
 
 Read every `Proof of catch` / `Proof-of-catch` section and its `Each later guard was removed…` line.
 One row per claimed red. Also check `Cases added: <n> (<file>)` against `git show --stat`: the named
-test file must be in the commit and hold that many new cases; a mismatch is its own row. No
-`Cases added:` line means no row.
+test file must be in the commit and hold that many new cases. Only a mismatch gets a row (Result
+`mismatch`); a match or no `Cases added:` line gets none.
 
 1. **Mutate only what the claim covers.**
    - Whole fix: reverse the commit's non-test changes. First list its test files (`git show --stat`:
@@ -60,7 +60,7 @@ test file must be in the commit and hold that many new cases; a mismatch is its 
    - `wrong reason`: red, but from a fatal, a parse error, a missing fixture or a different case.
    - `not reproduced`: still green with the code broken; the test does not cover what it claims.
 4. **Restore and run again.** It must be green (or match the stated base-branch red). If not,
-   the claim's green half fails: say so.
+   the claim's green half fails: say so in the same row, not a row of its own.
 
 Finally run the gate the commit claims (`Gate: …`) once on the restored tree and compare the counts.
 Compare passed and failed; report skipped as seen. A claim with no counts ("10 tiers passed") is
@@ -85,7 +85,10 @@ prove-it: <range> at <HEAD sha>   tree clean before and after: yes|NO
 | abc123 | Cases added: 9 | git show --stat | mismatch | tests/x.php not in the commit |
 
 Gate claimed: smoke 258/258, integration 609/609   Gate seen: smoke 258/258, integration 607/609
-Verdict: <n> confirmed, <n> not reproduced, <n> wrong reason, <n> could not run.
+Verdict: <n> confirmed, <n> not reproduced, <n> wrong reason, <n> could not run, <n> cases mismatch.
 ```
+
+Write the Result column and the Verdict line exactly as above, plain text, no bold: other tools read them.
+The four red counts add up to the red-claim rows; `cases mismatch` counts the mismatch rows.
 
 Lead with any `not reproduced` or `wrong reason` row: those commits claim evidence they do not have.
