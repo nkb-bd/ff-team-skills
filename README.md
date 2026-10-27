@@ -113,6 +113,7 @@ ff-team-skills/
 ├── shared/scripts/          audit-autharif.sh — weekly drift check for pre-merge-review criteria packs
 │                            ratchet-lint.sh — ratchet budget lint for proof-of-catch §5
 │                            test-gates.sh — self-test for ratchet-lint.sh and hooks/commit-msg
+│                            check-repo.sh — frontmatter, $skill refs, docs anchors, gates
 ├── shared/hooks/            commit-msg — rejects a commit that changes tests without proof-of-catch evidence
 ├── _flows/                  Flow definitions
 ├── _inactive/               Shelved skills — unused but kept. Move back to root to re-activate.
@@ -147,6 +148,7 @@ On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`)
 - `Use $prove-it` — re-run the proof-of-catch claims on this branch before merge.
 - `bash shared/scripts/ratchet-lint.sh 'whereRaw\(.*fc_' 3 app includes` — fail unless exactly 3 known hits remain; add the bad fixture as a path to prove it fires.
 - `cp shared/hooks/commit-msg <plugin>/.git/hooks/ && chmod +x <plugin>/.git/hooks/commit-msg` — block test commits without evidence. `bash shared/scripts/test-gates.sh` self-tests both.
+- `bash shared/scripts/check-repo.sh` — frontmatter, skill references, docs anchors and the gates; run it before pushing.
 - `bash shared/scripts/audit-autharif.sh --validate` — confirm pre-merge-review criteria packs still classify the test corpus at ≥80% (skip if the script isn't on this machine).
 
 ## Real-life example: one bug, start to finish

@@ -1,6 +1,14 @@
 ---
 name: release-plan
-description: Generate a monthly release plan (8-section playbook format) for a Fluent product free+pro pair from a short list of items, owners, and rough sizes. Resolves the repo pair and current version, gathers git+PR evidence to classify merged vs in-flight, sizes each item S/M/L, and writes docs/release-plans/<product>-<version>-<month>.md. Optional opt-in phases: FluentBoards sync (create board/column/cards, map FB refs, split merged vs In Review) and a styled HTML preview. Use when the user says "release plan", "monthly plan", "plan the release", "draft the plan for <version>", or pastes a list of release items with owners. Complements (does not replace) the `release` skill, which does the version bump / changelog / tag / zip.
+description: >
+  Generate a monthly release plan (8-section playbook format) for a Fluent product free+pro pair
+  from a short list of items, owners, and rough sizes. Resolves the repo pair and current version,
+  gathers git+PR evidence to classify merged vs in-flight, sizes each item S/M/L, and writes
+  docs/release-plans/<product>-<version>-<month>.md. Optional opt-in phases: FluentBoards sync
+  (create board/column/cards, map FB refs, split merged vs In Review) and a styled HTML preview.
+  Use when the user says "release plan", "monthly plan", "plan the release", "draft the plan for
+  <version>", or pastes a list of release items with owners. Complements (does not replace) the
+  `release` skill, which does the version bump / changelog / tag / zip.
 ---
 
 # release-plan
