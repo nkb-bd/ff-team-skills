@@ -224,13 +224,15 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
     <!-- PHASE 4 -->
     <div class="block" style="--c:var(--cat-build)">
       <div class="top"><span class="pnum">04</span><span class="pname">Build</span><span class="role">Build</span></div>
-      <div class="pdesc">Write it test-first, grounding every framework claim in real source. A <b>seam</b> keeps each test honest.</div>
+      <div class="pdesc">Write it test-first, grounding every framework claim in real source. A <b>seam</b> keeps each test honest; <b>proof of catch</b> shows it can fail.</div>
       <div class="pills">
         <button class="pill" data-term="tdd" style="--c:var(--cat-build)"><i></i>tdd</button>
         <button class="pill" data-term="bug-fix" style="--c:var(--cat-build)"><i></i>bug-fix</button>
+        <button class="pill" data-term="proof-of-catch" style="--c:var(--cat-build)"><i></i>proof-of-catch</button>
         <button class="pill" data-term="source-driven-development" style="--c:var(--cat-build)"><i></i>source-driven-development</button>
         <button class="pill" data-term="seam"><i></i>seam</button>
         <button class="pill" data-term="regression test"><i></i>regression test</button>
+        <button class="pill" data-term="ratchet budget"><i></i>ratchet budget</button>
       </div>
     </div>
 
@@ -333,6 +335,7 @@ const TERMS = {
   'rigorous-coding-workflow':{cat:'Orchestrator', href:'./guide.html#rigorous-coding-workflow', d:'The principles layer under new-feature — plan before executing, use subagents for context hygiene, capture lessons, verify before done, push for elegance.'},
   'tdd':{cat:'Build', href:'./guide.html#tdd', d:'Test-driven development — red-green-refactor with the correct-seam check: the failing test must exercise the bug pattern at the real call site.'},
   'bug-fix':{cat:'Build', href:'./guide.html#bug-fix', d:'The canonical bug workflow. Fix mode: reproduce → minimise → hypothesise → instrument → fix → regression-test. Find mode: a plugin-wide discovery sweep with a Finder → Verifier → Feedback loop.'},
+  'proof-of-catch':{cat:'Build', href:'./guide.html#proof-of-catch', d:'Every test and guard is seen red on the broken code, runs on a real DB with its own cleaned-up fixtures, is never weakened, and leaves its red output and gate numbers in the commit. Bug fixes also lock their class with a lint, inventory gate or ratchet budget.'},
   'source-driven-development':{cat:'Build', href:'./guide.html#source-driven-development', d:"Ground every framework claim in the vendored source or official docs before asserting it. Anything you can't verify gets tagged UNVERIFIED: so it's never silently asserted."},
   'zoom-out':{cat:'Build', href:'./guide.html#zoom-out', d:"A higher-level map of an unfamiliar code area for when you're lost mid-task."},
   'pre-merge-review':{cat:'Review', href:'./guide.html#pre-merge-review', d:'The canonical pre-merge review. Full: seven parallel detectors plus sequential pattern passes. Light: pattern passes only, for tiny diffs. Re-runnable — clears resolved findings.'},
@@ -356,7 +359,8 @@ const TERMS = {
   'phase':{cat:'Vocabulary', href:null, d:'One numbered stage of new-feature — triage, align, plan, spec, build, review, ship — separated by approval gates.'},
   'ceremony':{cat:'Vocabulary', href:null, d:'The amount of process a change gets. It scales with the tier: a typo gets none, a breaking change gets every gate.'},
   'subagent':{cat:'Vocabulary', href:null, d:'A separate agent spawned to do focused work in its own clean context, keeping the main session uncluttered — the engine of context hygiene.'},
-  'regression test':{cat:'Vocabulary', href:null, d:"A test added alongside a fix that fails on the old code and passes on the new, so the bug can't silently return."},
+  'regression test':{cat:'Vocabulary', href:null, d:"A test added alongside a fix that fails on the old code and passes on the new, so the bug can't silently return. proof-of-catch requires seeing that red."},
+  'ratchet budget':{cat:'Vocabulary', href:null, d:'A lint that counts the violations old code already has and fails unless the count equals a stored budget. The number can only go down, so every fix locks its gain.'},
   'spec':{cat:'Vocabulary', href:null, d:'The written plan for a change, produced in the plan/spec phase via openspec before any code is built.'},
   'openspec':{cat:'Vocabulary', href:null, d:'The spec system new-feature uses to record a change’s plan, then archives once the work ships.'},
   'artifact':{cat:'Vocabulary', href:null, d:'A durable output — spec, report, PR description — that carries knowledge forward as the project’s memory.'},

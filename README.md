@@ -4,7 +4,8 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 
 **🏠 [Home (GitHub Pages)](https://nkb-bd.github.io/ff-team-skills/)** — landing page: the library at a glance, grouped by what each skill does.
 **📖 [Skill Guide](https://nkb-bd.github.io/ff-team-skills/guide.html)** — illustrated guide to every skill, when to use it, and how they chain.
-**📕 [Skill Dictionary](https://nkb-bd.github.io/ff-team-skills/dictionary.html)** — every skill and term in one line of plain English.
+**📕 [Skill Flow](https://nkb-bd.github.io/ff-team-skills/flow.html)** — the workflow as a readable flow; every skill and term in one line of plain English.
+**🧪 [proof-of-catch](https://nkb-bd.github.io/ff-team-skills/guide.html#proof-of-catch)** — tests seen red, evidence in the commit, bug classes locked by a gate.
 **🗺 [new-feature illustrated manual](https://nkb-bd.github.io/ff-team-skills/new-feature.html)** — phase rail, tier matrix, call graph, and every check the orchestrator runs ([audit record](new-feature/AUDIT.md)).
 
 ## Active skills
@@ -39,6 +40,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | Skill | Purpose |
 |---|---|
 | `pre-merge-review` | Canonical pre-merge review. **Full (default):** 7 parallel detectors (accessibility, async-races, ui-to-backend-wiring, permissions, backwards-compat, error-handling-ux, performance + data integrity) plus sequential pattern passes (WP-PHP / JS / Vue / state-machine + adversarial inputs). **Light:** sequential passes only, for tiny diffs. Re-runnable — clears resolved findings. |
+| `proof-of-catch` | Evidence discipline for every test and guard: seen red on the broken code (each guard of a fix in turn), real DB and self-cleaning fixtures, never weakened, red output and gate numbers in the commit body; each bug class locked by a lint, inventory gate or ratchet budget. Called by `tdd`, `bug-fix` and `new-feature`. |
 | `doubt-driven-development` | Adversarial fresh-context review for high-stakes / irreversible decisions: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP, spawning a clean-context skeptic to refute. `new-feature` calls it at the Breaking-tier spec gate, in `/build auto`, and on non-trivial review fixes. |
 | `plugin-audit` | Deep WordPress plugin audit: security, optimization, dead code, UI-to-DB traceability. Evidence-backed findings, severity-ranked remediation backlog. |
 | `improve-codebase-architecture` | Find deepening/refactoring opportunities informed by CONTEXT.md domain language and ADRs. The post-merge home for mid-feature refactor itches. |
@@ -69,6 +71,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | "I'm lost in this code area" | `zoom-out` |
 | "Where can the architecture improve" | `improve-codebase-architecture` |
 | "Is this safe to ship" / "second-guess this decision" | `doubt-driven-development` |
+| "Is this test real" / "prove the fix" / "write the commit body" | `proof-of-catch` |
 | "Verify how this API behaves" / "check the docs before coding" | `source-driven-development` |
 
 ## How the skills chain
@@ -76,10 +79,10 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 ```text
                          ┌──────────────────── new-feature ────────────────────┐
   issue / PRD / intent → triage → grill-with-docs → openspec (+ design-an-interface)
-                          → spec → tdd → pre-merge-review → pr-descriptor → ship
+                          → spec → tdd (+ proof-of-catch) → pre-merge-review → pr-descriptor → ship
                                     │  (spec grounds APIs via source-driven-development;
                                     │   Breaking-tier decisions pass doubt-driven-development)
-                                    └─ bug surfaces mid-build → bug-fix
+                                    └─ bug surfaces mid-build → bug-fix (+ proof-of-catch)
                                     └─ lost in the code      → zoom-out
                                     └─ unverified API claim  → source-driven-development
                                     └─ irreversible decision → doubt-driven-development

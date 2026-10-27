@@ -212,7 +212,7 @@ Follow **`$tdd`** (matt) red-green-refactor for each scenario:
 1. **Red**: write the failing test at the correct seam (matt's "correct seam"
    check — the test must exercise the bug pattern as it occurs at the call
    site, not at a shallower seam that gives false confidence).
-2. **Green**: minimum code to pass.
+2. **Green**: minimum code to pass, then apply **`$proof-of-catch`**. Tick the scenario's task in `tasks.md` only with its step-1 red output recorded, so each OpenSpec `Scenario` maps to one proven case.
 3. **Refactor**: simplify against the code-quality rules below — only after green. If a `$simplify` (or equivalent refactor) skill is available in the current environment, invoke it; otherwise refactor manually.
 
 Code-quality rules (do not skip):

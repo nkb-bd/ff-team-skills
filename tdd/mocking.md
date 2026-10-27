@@ -3,7 +3,6 @@
 Mock at **system boundaries** only:
 
 - External APIs (payment, email, etc.)
-- Databases (sometimes - prefer test DB)
 - Time/randomness
 - File system (sometimes)
 
@@ -12,6 +11,7 @@ Don't mock:
 - Your own classes/modules
 - Internal collaborators
 - Anything you control
+- The database, query builder or models: use a real test DB. SQL bugs (missing prefix, strict GROUP BY) pass on a mocked DB; see `proof-of-catch`
 
 ## Designing for Mockability
 
