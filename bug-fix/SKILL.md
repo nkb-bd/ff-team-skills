@@ -155,6 +155,7 @@ Required before declaring done:
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
+- [ ] **The class is locked** — a lint, inventory gate or ratchet budget per `$proof-of-catch` §5, proven on a committed bad fixture and wired into the default gate (or the commit says why no script can see this class)
 - [ ] **Security/authz fixes only — sibling sweep done.** A vuln is almost never alone. Before declaring done, enumerate every sibling of the patched path and confirm each is safe or fixed:
   - **Same class, other products.** A sink class (mail headers built from a display name, `maybe_unserialize` on stored values, LIKE without `esc_like`) is rarely unique to one plugin. Grep every Fluent product checked out next to this one and fix or record each as clean, one commit per repo, each with its own proof of catch.
   - For an **IDOR / authorization-scope** bug (handler authorizes a request-named scope like `form_id` but acts on attacker-supplied IDs), find every branch of the same dispatcher and every other handler that reads an ID array (`entries[]`, `ids[]`, `submission_ids[]`). Confirm each re-scopes the IDs (`->where('scope_id', $x)->whereIn('id', $ids)`) or authorizes the *fetched rows'* real scope. The bug lives in the *asymmetry* between branches — the delete branch that forgot the scope filter its siblings apply.
