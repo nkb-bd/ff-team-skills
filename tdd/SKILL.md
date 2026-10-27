@@ -106,4 +106,5 @@ After all tests pass, look for [refactor candidates](refactoring.md):
 [ ] Test would survive internal refactor
 [ ] Code is minimal for this test
 [ ] No speculative features added
+[ ] Seen red for the right reason, per `$proof-of-catch`
 ```

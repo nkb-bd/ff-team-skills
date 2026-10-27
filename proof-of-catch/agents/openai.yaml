@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proof of Catch"
+  short_description: "Prove every test and guard fails on the broken code, and put the proof in the commit"
+  default_prompt: "Use $proof-of-catch on the tests in this change: revert each guard in turn, show the red output, check fixtures and mocks, and draft the commit body with the evidence."

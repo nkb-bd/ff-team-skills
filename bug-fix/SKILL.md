@@ -144,6 +144,7 @@ If a correct seam exists:
 3. Apply the fix.
 4. Watch it pass.
 5. Re-run the Phase 1 feedback loop against the original (un-minimised) scenario.
+6. Apply **`$proof-of-catch`**: revert each guard of the fix in turn and see its case go red, keep fixtures real and cleaned up, and put the red output and gate numbers in the commit body.
 
 ## Phase 6 — Cleanup + post-mortem
 
@@ -155,6 +156,7 @@ Required before declaring done:
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
 - [ ] **Security/authz fixes only — sibling sweep done.** A vuln is almost never alone. Before declaring done, enumerate every sibling of the patched path and confirm each is safe or fixed:
+  - **Same class, other products.** A sink class (mail headers built from a display name, `maybe_unserialize` on stored values, LIKE without `esc_like`) is rarely unique to one plugin. Grep every Fluent product checked out next to this one and fix or record each as clean, one commit per repo, each with its own proof of catch.
   - For an **IDOR / authorization-scope** bug (handler authorizes a request-named scope like `form_id` but acts on attacker-supplied IDs), find every branch of the same dispatcher and every other handler that reads an ID array (`entries[]`, `ids[]`, `submission_ids[]`). Confirm each re-scopes the IDs (`->where('scope_id', $x)->whereIn('id', $ids)`) or authorizes the *fetched rows'* real scope. The bug lives in the *asymmetry* between branches — the delete branch that forgot the scope filter its siblings apply.
   - When the bug references a **known CVE**, sweep the CVE's sibling code paths explicitly; the original patch often hardened only the reported instance. (fluent-forms WPScan req 11316830 was a delete-branch sibling of CVE-2026-5396 that the original fix missed.)
   - Static review catches at most one path at a time. For authz, add/note a runtime **authz-matrix** test seam (low-priv user × each mutating endpoint × cross-scope IDs → expect 403 / 0 rows) — that is the only thing that locks the class.

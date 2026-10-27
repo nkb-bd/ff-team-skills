@@ -202,6 +202,7 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
   <div class="grp">Review &amp; quality</div>
   <a href="#pre-merge-review">pre-merge-review</a>
   <a href="#doubt-driven-development">doubt-driven-development</a>
+  <a href="#proof-of-catch">proof-of-catch</a>
   <a href="#plugin-audit">plugin-audit</a>
   <a href="#improve-codebase-architecture">improve-codebase…</a>
   <a href="#explain-this">explain-this</a>
@@ -231,6 +232,7 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <div class="flow-row"><span class="want">Build test-first</span><span class="use">$tdd</span></div>
     <div class="flow-row"><span class="want">Verify how an API behaves before coding</span><span class="use">$source-driven-development</span></div>
     <div class="flow-row"><span class="want">Second-guess a high-stakes / irreversible call</span><span class="use">$doubt-driven-development</span></div>
+    <div class="flow-row"><span class="want">Prove a test or fix is real</span><span class="use">$proof-of-catch</span></div>
     <div class="flow-row"><span class="want">Understand unfamiliar code deeply</span><span class="use">$explain-this</span></div>
     <div class="flow-row"><span class="want">Get un-lost in a code area</span><span class="use">$zoom-out</span></div>
     <div class="flow-row"><span class="want">Find where the architecture can deepen</span><span class="use">$improve-codebase-architecture</span></div>
@@ -349,6 +351,13 @@ footer.page { border-top: 1px solid var(--hair); margin-top: 90px; padding-top: 
     <p class="what">Adversarial fresh-context review for the calls that are expensive to reverse. Runs a CLAIM → EXTRACT → DOUBT → RECONCILE → STOP loop: state the decision as one falsifiable sentence, list its load-bearing assumptions, then spawn a clean-context skeptic whose only job is to refute them. Surviving doubts are resolved or explicitly accepted before an explicit go / no-go.</p>
     <div class="row"><span class="lbl">When</span><span class="when">Before a schema migration, a public hook-contract change, a capability change, deleting code you didn't write, or any security-sensitive call. new-feature invokes it at the Breaking-tier spec gate, inside /build auto, and on non-trivial review fixes. Skip for reversible, low-blast-radius edits.</span></div>
     <div class="row"><span class="lbl">Example</span><span class="ex">Use $doubt-driven-development — is renaming this filter's third arg safe for shipped addons?</span></div>
+  </div>
+
+  <div class="skill" id="proof-of-catch">
+    <h3>proof-of-catch</h3>
+    <p class="what">Evidence discipline for every test and guard an agent writes. Each test is seen red on the broken code (each guard of a multi-guard fix removed in turn), runs on the real database with its own uniquely named fixtures cleaned up in a finally, is never weakened to pass, and leaves its red output and gate numbers in the commit body.</p>
+    <div class="row"><span class="lbl">When</span><span class="when">Whenever a test, lint or CI guard is added or changed, and before committing a bug or security fix. tdd, bug-fix and new-feature call it for every new case.</span></div>
+    <div class="row"><span class="lbl">Example</span><span class="ex">Use $proof-of-catch on this fix — revert each guard, show the red output, and draft the commit body.</span></div>
   </div>
 
   <div class="skill" id="plugin-audit">
