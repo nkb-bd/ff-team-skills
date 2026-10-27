@@ -149,6 +149,57 @@ On a new machine: clone, then symlink `~/.claude/skills` (or `~/.agents/skills`)
 - `cp shared/hooks/commit-msg <plugin>/.git/hooks/ && chmod +x <plugin>/.git/hooks/commit-msg` — block test commits without evidence. `bash shared/scripts/test-gates.sh` self-tests both.
 - `bash shared/scripts/audit-autharif.sh --validate` — confirm pre-merge-review criteria packs still classify the test corpus at ≥80% (skip if the script isn't on this machine).
 
+## Real-life example: one bug, start to finish
+
+Illustrative walkthrough (file names and numbers are examples). Report: *a user who can manage form A
+deletes entries of form B by sending B's entry IDs to the bulk-delete endpoint.*
+
+1. **Fix it** — `Use $bug-fix: bulk entry delete accepts entry IDs from other forms.`
+   The agent writes a failing test first (`tests/integration/entry-bulk-delete-scope.php`), sees it red,
+   then scopes the query: `->where('form_id', $formId)->whereIn('id', $ids)`.
+2. **Prove it** — `proof-of-catch` is called from bug-fix Phase 5. The fix also added a capability
+   check, so each guard is removed in turn and its case goes red. Fixtures are two forms and four
+   entries the test creates and deletes by ID in a `finally`.
+3. **Lock the class** — the same bug lives in any handler that takes an ID array without a scope.
+   An inventory gate fails when a route reads `entries[]` / `ids[]` without a scope filter; old
+   offenders sit under a ratchet budget:
+   `bash shared/scripts/ratchet-lint.sh 'whereIn\(.id., \$ids\)' 4 app` (exactly 4 known hits).
+4. **Commit** — the body carries the evidence. Forget it and the hook stops you:
+
+   ```text
+   ✗ This commit changes tests but has no 'Proof of catch:' or 'Cases added:' section.
+   ```
+
+   ```text
+   Stop bulk delete removing entries from other forms
+
+   Cases added: 3 (tests/integration/entry-bulk-delete-scope.php)
+
+   Proof of catch (fix reverted):
+     INTEGRATION: 1/3 passed, 2 failed
+     form B entry survives a delete scoped to form A  expected 2, actual 0
+   Each later guard was removed in turn and its case went red: form scope, capability check.
+
+   Gate: smoke 120/120, permissions 214/214, integration 388/388, static green.
+   ```
+
+5. **Review** — `Use $pre-merge-review`. It lists the proof as unchecked and recommends `$prove-it`.
+6. **Check the proof** — `Use $prove-it`. A fresh Opus subagent replays each claim on a clean tree:
+
+   ```text
+   | Commit  | Claim            | Mutation                            | Result         | What we saw                     |
+   |---------|------------------|-------------------------------------|----------------|---------------------------------|
+   | 4f2c9e1 | whole fix        | non-test changes reversed           | confirmed      | 1/3 passed; "form B entry ..."  |
+   | 4f2c9e1 | form scope       | removed EntryService.php:212 only   | confirmed      | 1/3 passed                      |
+   | 4f2c9e1 | capability check | removed EntryPolicy.php:48-50 only  | not reproduced | 3/3 passed with the check gone  |
+   Verdict: 2 confirmed, 1 not reproduced.
+   ```
+
+   The capability check has no case that reaches it. Add one (a subscriber gets 403), commit, and
+   re-run `$prove-it` until every row is `confirmed`. Then `Use $pr-descriptor` and open the PR.
+
+Set up once per plugin repo: `cp shared/hooks/commit-msg <plugin>/.git/hooks/ && chmod +x <plugin>/.git/hooks/commit-msg`.
+
 ## Skill conventions
 
 Each skill directory contains:
