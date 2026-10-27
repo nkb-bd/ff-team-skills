@@ -4,11 +4,10 @@ description: >
   Evidence discipline for any test or guard an agent writes: prove it goes red on the broken code,
   keep it honest (real DB, own fixtures, cleaned up), never weaken it, and carry the red output and
   gate numbers into the commit message. Use whenever a test, lint or CI guard is added or changed,
-  and before committing a bug fix or security fix. Triggers: "add a test", "regression test",
-  "prove the fix", "write the commit message", "is this test real".
+  and before committing a bug fix or security fix. Triggers: "regression test", "prove the fix",
+  "is this test real".
 when_to_use: >
-  Called by `tdd`, `bug-fix` (Phase 5) and `new-feature` (build) for every new test, and by
-  `security-postmortem` for guards. Skip for changes that add or touch no test and no guard.
+  Called by `tdd`, `bug-fix` (Phase 5) and `new-feature` (build) for every new test. Skip for changes that add or touch no test and no guard.
 ---
 
 # Proof of Catch
@@ -19,41 +18,43 @@ the commit carry that proof.
 
 ## 1. Prove each test, and each guard, goes red
 
-Write the test before the fix where you can (`$tdd`, `bug-fix` Phase 5): it is red on the old code
-by construction. Tests written after the fix, and every guard, still need the revert below.
+Write the test before the fix where you can (`$tdd`, `bug-fix` Phase 5). A case you saw red before
+the fix needs no revert: record that red output. For a case written after the fix, and for each guard
+of a multi-guard fix:
 
-For every new case:
-
-1. Break the thing it covers: revert the fix, flip the comparison, delete the `where`, drop the
-   capability check. Use `git stash` or a temp copy, never a hand edit you might forget.
+1. Break only the thing it covers. Whole fix: `git stash push -- <fix files>`, then `git stash pop`
+   (a bare `git stash` also hides the new test). One guard of several: save `git diff > /tmp/fix.patch`,
+   remove just that guard, and restore with `git checkout -- <file> && git apply /tmp/fix.patch`, so
+   the other guards stay in and cannot cause the red.
 2. Run the suite. **It must go red, with a message that names the real problem.** A red caused by a
    fatal, a typo or a missing fixture is not a catch.
-3. Restore the code and confirm `git diff` shows only your intended change.
+3. Restore, and confirm `git diff` shows exactly your change again.
 4. Run again. Green.
 
-**A fix with several guards needs each guard proven on its own.** Remove guard 1, see its case go
-red, restore; then guard 2; and so on. A case that stays green when its guard is removed is
-covering nothing: fix the case or delete the guard.
+A case that stays green when its guard is removed covers nothing: fix the case. A guard no case can reach goes under "Needs a human decision";
+never delete it.
 
-If a test cannot be made to fail, delete it.
+If a test you just wrote cannot be made to fail, rewrite it or drop it before committing.
 
 ## 2. Keep the test honest
 
 - **Never mock the database, the query builder or the models.** The bugs that ship from WordPress
   plugins are SQL and runtime bugs (missing prefix, `ONLY_FULL_GROUP_BY`, wrong discriminator), and
   a mocked-DB test passes on all of them. Mock only outbound third parties (SMTP, payment, remote APIs).
-- **Create your own fixtures and delete them in a `finally`.** Dev sites hold real contacts, forms
-  and entries. Never assert on rows you did not create. Give fixtures unique names
-  (`uniqid('t_')`) so repeat and parallel runs do not collide.
+- **Create your own fixtures and delete them in a `finally`, by the exact IDs you created.** Dev
+  sites hold real contacts, forms and entries; never clean up by name pattern. Never assert on rows
+  you did not create. Give fixtures unique names (`uniqid('t_')`) so repeat and parallel runs do
+  not collide. Prefer a dedicated test site or DB when the repo has one.
 - **Assert behaviour, not log text or exact SQL strings.**
 - No `sleep()`, no real loopback HTTP, no real mail: intercept `wp_mail` with `pre_wp_mail`.
-- Clear caches and transients before the suite, so a stale cache cannot hide broken code.
+- Clear the plugin's own caches and transients before the suite, so a stale cache cannot hide
+  broken code.
 
 ## 3. Never game the suite
 
 - **Never weaken, narrow or delete a test to make it pass.** The test is the spec. If it looks
   wrong, say so and leave it.
-- **Never commit a red suite.** A flaky case gets skipped with a written reason, not reported green.
+- **Never commit new red.** A flaky case gets skipped with a written reason, not reported green.
 - Red that exists on the base branch too is not yours: say so with numbers ("34 failures, identical
   with and without this change"), do not hide it.
 - A bug you find that is out of scope goes in the repo's backlog file (`tests/FIX-PLAN.md` or the
@@ -82,36 +83,40 @@ without the counts.
 
 ## 5. Lock the class, not just the instance
 
-A test locks one bug. Ask what class it belongs to (unprefixed raw SQL, a route with no policy, an
-entry chunk that exports, Title Case in UI copy, a display name in a mail header) and whether a
-machine can spot that class. If it can, add a gate in the same branch so the class cannot return:
+For bug and security fixes, not features. A test locks one bug. Ask what class it belongs to
+(unprefixed raw SQL, a route with no policy, an entry chunk that exports, a display name in a mail
+header) and whether a script can spot it. If it can, add a gate in the same branch:
 
-- **Lint**: a zero-dependency script (`bash` + `grep`, or `php`/`node` over the tree) that exits
-  non-zero on the pattern. Security classes: design it with `$security-postmortem` Phase 4B.
+- **Lint**: a zero-dependency script that exits non-zero on the pattern
+  (template: `$security-postmortem` "Guardrail patterns").
 - **Inventory gate** for "every X must have Y": the check fails when a new route, entry or setting
   appears without its manifest entry, policy method or test. New code cannot drift in silently.
 - **Ratchet budget** when old code already breaks the rule and fixing all of it is out of scope.
-  Count the violations, store the count in the lint, fail if the count is above it, **and fail if it
-  is below it** until the budget is lowered in the same commit. The number only goes down, and every
-  fix locks its gain.
+  Count the violations over fixed scan paths, store the count in the lint, and fail unless the
+  count **equals** the budget, printing the new count. Above it is a new violation; below it means
+  lower the budget now, so every fix locks its gain. A count cannot see one hit swapped for another;
+  list the known hits instead when that matters.
 
 Every gate needs:
 
-1. **Its own proof, committed**: a `fixtures/bad-*.php` (or `.js`) file holding the pattern; running
-   the lint on it must exit 1 with the expected hits. That proof re-runs in CI, unlike a one-off revert.
-2. **A green run on the real tree**, or exactly the budget.
+1. **Its own proof, committed**: a `tests/**/fixtures/bad-*.php` (or `.js`) copied from the real
+   pre-fix code, not written to fit the regex. Running the lint on it must exit 1 with the expected
+   hits (for a ratchet, scan the real tree plus the fixture, so the count goes over budget). Keep it
+   out of the normal scan and the release build (`.distignore`).
+2. **A green run on the real tree** (for a ratchet: count equals budget).
 3. **Wiring into the gate people already run** (`run-all.sh`, `npm run build`, the pre-push hook) and
    a line in the repo's CLAUDE.md test table. A lint nobody runs catches nothing.
 4. **A one-line header** naming the bug or report it came from.
 
-Skip the gate when the class is semantic or cross-file and no script can see it; add a checklist item
-to `pre-merge-review` instead, and say so in the commit.
+Skip the gate for a one-off bug with no repeatable pattern. When the class is semantic or
+cross-file and no script can see it, add a checklist item to `pre-merge-review` instead, and say
+so in the commit.
 
 ## Done when
 
 - [ ] Every new case was seen red for the right reason, then green
 - [ ] Each guard of a multi-guard fix was removed in turn and its case went red
 - [ ] No DB mocks; fixtures created, uniquely named and cleaned up in `finally`
-- [ ] No test weakened; suite green (or base-branch red stated with numbers)
+- [ ] No test weakened; no new red (base-branch red stated with numbers)
 - [ ] Commit body carries the cases, the red output and the gate numbers
-- [ ] The bug class has a gate (lint, inventory or ratchet) with a committed bad fixture and wiring, or the commit says why not
+- [ ] Bug/security fix: the class has a gate with a committed bad fixture and wiring, or the commit says why not
