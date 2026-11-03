@@ -251,9 +251,10 @@ The rule is **"establish authorization for this mutation,"** not "always call
 - Resource-ownership check (`get_current_user_id() === $resource->user_id`)
 - A nonce verified in the same request flow **paired with** a capability or
   ownership check (nonce alone is not authorization)
-- A hard context gate that genuinely restricts callers (`if (!is_admin())
-  return;`, `if (!defined('WP_CLI')) return;`, `if (!wp_doing_ajax()) return;`)
-  — only valid when the callback is meaningful only in that context
+- An execution-context prerequisite (`is_admin()`, `WP_CLI`, `wp_doing_ajax()`)
+  paired with capability, ownership, or a verified internal trust signal. Context
+  alone is never authorization: admin screens and AJAX can be reached by
+  low-privilege or unauthenticated callers.
 
 **Smell patterns:**
 - `add_filter('plugin_slug/before_save_tag', function ($tag, $id) { wp_set_object_terms($id, $tag); ... });`
@@ -388,7 +389,7 @@ When this criteria reference is loaded, the detector MUST:
    `Model::save`, `->save()`, `->update(`, `wp_schedule_*`, `set_transient`,
    `update_user_meta`, `update_post_meta`, `update_term_meta`. If any are
    present, verify an authorization gate (capability check, ACL helper,
-   ownership check, or hard context gate — see "Mutating hook callbacks"
+   ownership check, or context prerequisite paired with authorization — see "Mutating hook callbacks"
    section) exists in the callback body before the mutation. If absent, emit
    a `rbac-alignment` finding.
 1. List every changed file matching `app/Http/Policies/*.php` or `app/Http/Controllers/*.php`.

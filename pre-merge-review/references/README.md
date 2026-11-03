@@ -17,6 +17,7 @@ WPManageNinja corpus — nothing here is generic best-practice copied from docs.
 | `detector-backwards-compatibility.md` | Will this break existing callers? Payload-key renames, default-value flips, response-shape drift, gateway-contract drift, semantic shifts in aggregates, column constraints tightening | **all files** (always runs) |
 | `detector-error-handling-ux.md` | What does the user see when the API fails? Blank screens on non-404, loading spinners stuck after errors, filters disappearing when panels collapse, hard-disabled blocks with no recovery path | `.vue`, `.jsx`, `.tsx`, `.js`, `.ts` |
 | `detector-performance-and-data-integrity.md` | Performance + data correctness in one pack (they co-occur on the same files): N+1 queries, unbounded `->get()`, repeated transient writes, non-atomic state transitions, string-vs-int data-type bugs | `.php` (controllers, services, models, views, migrations) |
+| `detector-security-assertion-quality.md` | When the diff *is* a security check (test, detector, guard, lint rule): is the signal it keys on forgeable (a status/exception a different layer produces), and is its enumeration complete (first-of-N, one side of a pair, happy path only)? Loaded by Step 2 Pass J. | security tests, `detect_*`, semgrep/lint rules, auth/sanitization guards |
 
 ### General language / framework patterns — broad-spectrum checks
 
@@ -34,7 +35,8 @@ WPManageNinja corpus — nothing here is generic best-practice copied from docs.
 
 ### Evidence
 
-- `test-corpus.tsv` — 30 representative real review-comment headlines with their expected detector category. Used to validate that detector criteria packs and the headline classifier in `shared/scripts/audit-autharif.sh` are still in sync (target ≥80% accuracy).
+- `test-corpus.tsv` — curated real review-comment headlines with their expected worker-routing label. It is a smoke test for the headline classifier in `shared/scripts/audit-autharif.sh` (required: 100%); it does **not** prove that detector-pack rules are complete or synchronized with the classifier.
+- `audit-autharif.sh --validate` also checks that every required pack exists and that the security-assertion pack retains its critical J.1/J.2 anchors. This is a deletion/structure guard, not semantic rule-coverage proof.
 
 ## How to add a new rule
 
@@ -49,13 +51,13 @@ WPManageNinja corpus — nothing here is generic best-practice copied from docs.
 
 3. **Update the detector behaviour section** at the bottom of the pack — the grep/walk pattern the detector should use to find this rule.
 
-4. **Add a test-corpus row** to `test-corpus.tsv` with one representative headline this rule should classify under. Re-run validation:
+4. **Add a test-corpus row when the rule introduces a distinct headline shape** that the harvest classifier should route. Include mixed-category or negative cases when a generic word could steal the headline from the correct worker. Re-run validation:
 
    ```bash
-   bash /Volumes/Projects/Tools/agent-skills/shared/scripts/audit-autharif.sh --validate
+   bash /Volumes/Projects/Tools/ff-team-skills/shared/scripts/audit-autharif.sh --validate
    ```
 
-   Must stay ≥80%.
+   Must classify every curated row. Aggregate accuracy must not hide a newly unmapped case. Review detector-pack behavior separately; the planned structured manifest and mutation suite will provide stronger synchronization coverage.
 
 ## Project-specific customisation (no forking)
 
@@ -85,5 +87,7 @@ The detector files emit findings tagged with short category strings — these st
 | `bc-regression` | `detector-backwards-compatibility.md` |
 | `error-state` | `detector-error-handling-ux.md` |
 | `perf-and-integrity` | `detector-performance-and-data-integrity.md` |
+| `data-integrity` | correctness findings from `detector-performance-and-data-integrity.md` |
+| `security` | `detector-security-assertion-quality.md` / Pass J |
 
-Short strings stay because they're used for dedup keys, precedence ordering, and the test-corpus TSV — changing them would invalidate the corpus and the validation harness. The plain-English filenames solve the "what does this file contain?" problem without churning the data layer.
+Short strings stay because they're used for dedup keys and precedence ordering. The corpus uses worker-routing labels, so the combined performance/data-integrity worker is represented by `perf-and-integrity` even when its final finding category is `data-integrity`. The plain-English filenames solve the "what does this file contain?" problem without churning the data layer.

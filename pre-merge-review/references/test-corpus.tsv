@@ -33,3 +33,13 @@ WPManageNinja/fluent-player-dev	#352	fluent-player-block.jsx:95	Redundant per-me
 WPManageNinja/fluent-player-dev	#352	MediaController.php:222	Empty normalized post_content silently wipes existing media content	perf-and-integrity
 WPManageNinja/fluent-player-dev	#352	fluent-player-block.jsx:94	Silent sync failure after lesson save	error-state
 WPManageNinja/fluentform-dev	#1111	AllEntries.vue:loadFormEntries	Stale form request overwrites the selected form's entries table on form switch	async-state
+fluentform/fluentformpro	#251	ReportHelperPro.php:290	Previous-only currency leaks an empty block into the current report (enrich vs populate)	perf-and-integrity
+fluentform/fluentformpro	#251	ReportHelperPro.php:247	GROUP BY alias collides with raw column, merging distinct plans	perf-and-integrity
+fluentform/fluentformpro	#249	ReportHelperPro.php	Subscription report materializes every matching row	perf-and-integrity
+fluentform/fluentform	#1113	ReportTools.php	Payment summary now scans transactions twice	perf-and-integrity
+fluentform/fluentformpro	#249	ReportHelperPro.php	Aggregated cents can overflow on 32-bit PHP	perf-and-integrity
+fluentform/fluentformpro	#249	ReportHelperPro.php	Subscription report filters lack a supporting index	perf-and-integrity
+local/pre-merge-review	#0	AuthorizationPolicy.php	Permission gate lets editors overwrite view configuration	rbac-alignment
+local/pre-merge-review	#0	detector-security-assertion-quality.md	Security assertion trusts handler 403 as authorization denial	security
+local/pre-merge-review	#0	detector-security-assertion-quality.md	Security assertion checks only first mutating REST verb	security
+fluentform/fluentform-dev	#1246	TransferService.php:89	Import sanitizer rewrites every JSON key named autocomplete	perf-and-integrity

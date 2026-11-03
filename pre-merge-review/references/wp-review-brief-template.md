@@ -180,4 +180,4 @@ These run as part of Step 0 of `pre-merge-review`. Failures become entries in th
 | `wp-cli i18n make-pot` | `wp i18n make-pot . languages/<slug>.pot --dry-run` | Diff matches committed `.pot` if strings added |
 | `readme.txt` parser | parse `readme.txt`; check `Stable tag:` matches plugin header `Version:` | Equal |
 
-If a tool isn't installed in the environment, log `[pre-merge-review:tool-missing]` to stderr and skip — don't fail the run. Reviewers may run these manually.
+If a tool is unavailable, log `[pre-merge-review:tool-missing]` and add it to `Coverage gaps`. Do not describe the check as passing; use `INCOMPLETE VERIFICATION` when the missing check is material to the diff.

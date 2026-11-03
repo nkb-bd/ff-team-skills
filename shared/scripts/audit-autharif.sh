@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # audit-autharif.sh
 # Harvest autharif's review comments across configured repos and report on what
-# pr-reviewer's criteria packs cover (and what they miss).
+# pre-merge-review's criteria packs cover (and what they miss).
 #
 # Three modes:
 #   - HARVEST (default): pulls autharif comments since --since, classifies each
 #     headline, writes catalog files. Exits non-zero if >5% are unmapped.
 #   - VALIDATE (--validate): reads the test corpus and confirms each row maps to
-#     the expected detector. Exits non-zero if accuracy < 80%.
+#     the expected detector. Exits non-zero if accuracy < 100%, a required
+#     pack is missing, or a critical security-pack anchor disappears.
 #   - DIFF (--diff-with-pr <REPO> <PR>): for one PR, shows the gap between local
 #     pr-reviewer-like classification and autharif's actual GitHub findings.
 #
@@ -34,14 +35,29 @@ CORPUS=""
 DIFF_REPO=""
 DIFF_PR=""
 THRESHOLD_UNMAPPED=5             # % unmapped that fails the harvest
-THRESHOLD_ACCURACY=80            # % accuracy required in validate mode
+THRESHOLD_ACCURACY=100           # curated corpus is a no-regression contract
 
 REVIEWER="autharif"
 
 # Resolve script dir → repo root → criteria-packs dir
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 AGENT_SKILLS_ROOT="$( cd "${SCRIPT_DIR}/../.." && pwd )"
-CRITERIA_DIR="${AGENT_SKILLS_ROOT}/pr-reviewer/references"
+CRITERIA_DIR="${AGENT_SKILLS_ROOT}/pre-merge-review/references"
+REQUIRED_CRITERIA_PACKS=(
+  "detector-accessibility.md"
+  "detector-async-races.md"
+  "detector-ui-to-backend-wiring.md"
+  "detector-permissions-and-capabilities.md"
+  "detector-backwards-compatibility.md"
+  "detector-error-handling-ux.md"
+  "detector-performance-and-data-integrity.md"
+  "detector-security-assertion-quality.md"
+  "patterns-wordpress-php.md"
+  "patterns-javascript.md"
+  "patterns-vue.md"
+  "wp-review-brief-template.md"
+  "severity-and-resolution.md"
+)
 
 log() { echo "[audit-autharif:$1] ${*:2}" >&2; }
 
@@ -59,14 +75,14 @@ Harvest mode (default):
 
 Validate mode:
   --validate                  Run validation against the test corpus
-  --corpus PATH               Path to TSV corpus file (default: pr-reviewer/references/test-corpus.tsv)
+  --corpus PATH               Path to TSV corpus file (default: pre-merge-review/references/test-corpus.tsv)
 
 Diff mode:
   --diff-with-pr REPO PR      Compare local classification vs autharif's actual findings on one PR
 
 Common:
   --threshold-unmapped N      % unmapped that fails harvest (default: 5)
-  --threshold-accuracy N      % accuracy required in validate mode (default: 80)
+  --threshold-accuracy N      % accuracy required in validate mode (default: 100)
   -h | --help                 Show this help
 
 Examples:
@@ -113,6 +129,13 @@ classify_headline() {
   local h="$1"
   local hl="$(echo "$h" | tr '[:upper:]' '[:lower:]')"
 
+  # security assertion quality must win over generic permission/status words
+  if [[ "$hl" == *"security assertion"* || "$hl" == *"security detector"* \
+     || "$hl" == *"forgeable signal"* || "$hl" == *"enumeration completeness"* \
+     || "$hl" == *"first mutating rest verb"* || "$hl" == *"handler 403"* ]]; then
+    echo "security"; return
+  fi
+
   # a11y
   if [[ "$hl" == *mouse-only* || "$hl" == *keyboard-accessible* || "$hl" == *keyboard* \
      || "$hl" == *aria-* || "$hl" == *"aria "* || "$hl" == *aria_* \
@@ -120,6 +143,12 @@ classify_headline() {
      || "$hl" == *"screen reader"* || "$hl" == *"aria label"* || "$hl" == *"accessible name"* \
      || "$hl" == *"aria state"* || "$hl" == *"tab order"* || "$hl" == *tabindex* ]]; then
     echo "a11y"; return
+  fi
+
+  # Authorization boundaries outrank generic state words such as "overwrite".
+  if [[ "$hl" == *permission* || "$hl" == *capability* || "$hl" == *rbac* \
+     || "$hl" == *ownership* || "$hl" == *permission_callback* ]]; then
+    echo "rbac-alignment"; return
   fi
 
   # async-state
@@ -190,11 +219,15 @@ classify_headline() {
      || "$hl" == *"string values"* || "$hl" == *"string allow_"* \
      || "$hl" == *silently*wipe* || "$hl" == *silently*destroy* \
      || "$hl" == *"empty normalized"* || "$hl" == *normalizer*empty* \
-     || "$hl" == *destructive*write* || "$hl" == *"wipes existing"* ]]; then
+     || "$hl" == *destructive*write* || "$hl" == *"wipes existing"* \
+     || "$hl" == *previous-only* || "$hl" == *enrich*populate* \
+     || "$hl" == *group*alias*collid* || "$hl" == *alias*raw*column* \
+     || "$hl" == *materializ*matching*row* || "$hl" == *scan*transaction*twice* \
+     || "$hl" == *aggregated*cents*overflow* || "$hl" == *supporting*index* ]]; then
     echo "perf-and-integrity"; return
   fi
 
-  # traceability (also catches ui-logic per dedup precedence)
+  # traceability (also catches related ui-logic findings)
   if [[ "$hl" == *stub* || "$hl" == *nonfunctional* \
      || "$hl" == *"phase 2"* || "$hl" == *unimplemented* \
      || "$hl" == *"hardcoded dummy"* || "$hl" == *"dummy data"* \
@@ -216,6 +249,35 @@ classify_headline() {
   fi
 
   echo "unmapped"
+}
+
+# Validate only structural pack invariants here. Semantic pack-to-classifier
+# synchronization requires the planned structured manifest and mutation suite.
+validate_criteria_structure() {
+  local failed=0
+  local pack
+
+  for pack in "${REQUIRED_CRITERIA_PACKS[@]}"; do
+    if [[ ! -s "${CRITERIA_DIR}/${pack}" ]]; then
+      log "drop" "required criteria pack missing or empty: ${CRITERIA_DIR}/${pack}"
+      failed=1
+    fi
+  done
+
+  if [[ "$failed" -ne 0 ]]; then
+    return 1
+  fi
+
+  if ! grep -Fq '## J.1' "${CRITERIA_DIR}/detector-security-assertion-quality.md"; then
+    log "drop" "security criteria pack is missing required J.1 signal-forgeability anchor"
+    failed=1
+  fi
+  if ! grep -Fq '## J.2' "${CRITERIA_DIR}/detector-security-assertion-quality.md"; then
+    log "drop" "security criteria pack is missing required J.2 enumeration-completeness anchor"
+    failed=1
+  fi
+
+  [[ "$failed" -eq 0 ]]
 }
 
 # -----------------------------------------------------------------------------
@@ -364,6 +426,9 @@ case "$MODE" in
 
   validate)
     [[ -z "$CORPUS" ]] && CORPUS="${CRITERIA_DIR}/test-corpus.tsv"
+    if ! validate_criteria_structure; then
+      exit 1
+    fi
     if [[ ! -f "$CORPUS" ]]; then
       log "drop" "corpus not found: $CORPUS"
       exit 2

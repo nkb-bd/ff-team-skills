@@ -65,7 +65,9 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
 - Nonce verified **before** capability check (fail fast, cheapest check first)
 - `wp_verify_nonce()` or `check_admin_referer()` on every form handler
 - `check_ajax_referer()` on every AJAX handler (includes nonce verification)
-- `current_user_can()` on every data-modifying endpoint
+- Every data-modifying endpoint uses the project's authoritative ACL/policy,
+  resource-ownership check, or exact capability. Do not require raw
+  `current_user_can()` when the project designates a policy/helper.
 - REST routes have `permission_callback` — never `__return_true` on data-modifying routes
 - Nonce is anti-CSRF, NOT authorization — never use nonce-only as auth gate
 - `wp_ajax_nopriv_*` handlers: must still validate ownership of the resource being touched
@@ -84,9 +86,9 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
   - Resource-ownership check (`get_current_user_id() === $resource->user_id`)
   - A nonce verified in this same request flow (combined with a capability —
     nonce alone is not authorization)
-  - Hard context gate (`if (!is_admin()) return;`, `if (!defined('WP_CLI'))
-    return;`, `if (!wp_doing_ajax()) return;`) when the callback is genuinely
-    valid only in that context
+  - Execution-context prerequisite (`is_admin()`, `WP_CLI`, `wp_doing_ajax()`)
+    only when paired with capability, ownership, or a verified internal trust
+    signal. Context alone is never authorization.
 
   The miss to flag: a mutating callback with **none** of the above —
   trusting that "only our code calls this filter." Treat every mutating
@@ -135,6 +137,16 @@ Used by `engineering-review` Pass 4. Load this file when any PHP file has change
 
 - `ArrayHelper::get($settings, 'misc.jquery_loading_mode', 'auto')` — not `isset($settings['misc']['jquery_loading_mode']) ? ... : 'auto'`
 - `isset()` + `? :` ternary chains replaced by `ArrayHelper::get()` with a default
+
+## PHP 8 type-fatals (array-builtins on a non-array)
+
+PHP 8 promoted `array_filter`/`array_map`/`array_walk`/`array_merge`/`array_keys`/`array_values`(…) on a `string`/`null` from a warning to an **uncaught `TypeError`** — a white-screen fatal, not a swallowed notice. Three tells, in order of how often they ship:
+
+- **Variable assigned only inside a conditional/loop, used unconditionally after it.** `$x` set only inside `if ($v = …)` / `foreach`, then `array_filter($x)` below the block → on the empty path `$x` is `null`. This is how the Stripe "Push metadata" checkout fatal shipped (`StripeProcessor::getIntentMetaData()`). PHPStan flags it as `Variable $x might not be defined` — **fix it, never baseline it.**
+- **`ShortCodeParser::parse()` output fed to an array builtin.** `parse()` returns `''` (empty string) for `null`/empty input. `$x = ShortCodeParser::parse(...)` then `array_filter($x)` without an `is_array($x)` guard = fatal.
+- **`ArrayHelper::get($a, $k)` with no array default fed to an array builtin.** 2-arg `get()` returns `null` when the key is absent; `array_merge($acc, ArrayHelper::get($feed, 'default_fields'))` fatals. Give it an `[]` default or `(array)`-cast — **only where the value can actually be non-array, not on every `get()`.**
+
+PHPStan is blind to the last two (it types both `mixed`). The gated detector `dev/tests/detect_php8_array_fn_nonarray_guard.php` covers them across both repos — a new occurrence fails the security suite.
 
 ## Hooks and Actions
 

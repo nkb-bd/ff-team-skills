@@ -51,6 +51,7 @@ Used by `engineering-review` Pass 6. Load when any `.vue` file has changed.
 
 - `v-html` not used with user-controlled content — XSS risk; use `v-text` or template interpolation `{{ }}` instead
 - Dynamic component `:is` binding validated against an allowlist of component names — not raw user input
+- **Chart/library `formatter` callbacks that return HTML are innerHTML sinks, not template-escaped.** A `tooltip.formatter`/`label.formatter` in ECharts, Chart.js, ApexCharts, etc. returns a raw string the library injects via `innerHTML` — Vue's `{{ }}` escaping never touches it. Every interpolation of a data-derived label (`params.name`, `param.seriesName`, `params[0].axisValue`, `originalForm.title`, `data.name`, plan/country names) MUST be wrapped in `escapeHtml()` before it enters the returned template literal. Numeric values passed through `formatNumber`/`formatCurrency` are inert; string labels are not. **Failure mode:** a crafted form title / plan name / submission-derived label executes as stored XSS in the admin Reports charts. Note: the two ends live apart — the label is *stored* on submission/form-save (a different diff, sometimes in the Pro plugin), the sink is the frontend formatter — so single-diff review sees only one end; grep every `formatter:` in the changed component for raw `${...name|title|seriesName|axisValue}`.
 
 ## Index Stability in List Rendering
 

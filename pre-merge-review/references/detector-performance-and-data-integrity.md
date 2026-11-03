@@ -1,6 +1,6 @@
 # Performance + Data Integrity Criteria
 
-Used by `pr-reviewer` detector `perf-and-integrity`. Load when any `.php` (Controllers,
+Used by `pre-merge-review` detector `perf-and-integrity`. Load when any `.php` (Controllers,
 Services, Models, Views, Migrations) file has changed.
 
 These two categories are combined because the autharif corpus shows they co-occur
@@ -55,6 +55,91 @@ IDs before `whereIn`, and select only the columns needed on frontend render path
 - "Unbounded reply eager-load on public review listing" (`fluent-cart#1641`, `ProductReviewFrontendController.php:69`)
 - "Unbounded product query allowed via per-page setting" (`fluent-cart#1638`, `ProductsCollection.php:295`)
 - "Selected export can exceed API page cap and truncate records" (`fluent-cart#1658`, `useExport.js`)
+
+---
+
+## Materialize-then-reduce (aggregate in PHP instead of SQL)
+
+A `->get()` / `->all()` / `$wpdb->get_results()` whose result is **only** consumed by
+a `foreach` (or `array_sum`/`array_reduce`/`collect()->sum()`) that computes a total,
+a `count()`, or a `GROUP BY`-shaped map. The rows are loaded solely to be reduced —
+work the database should do. **This is distinct from "Unbounded query": even a
+`->where()`-scoped, span-clamped `get()` is a bug here**, because memory still scales
+with the number of matching rows when the DB could return a single aggregate row (or
+one row per group). Clamping the date span does **not** fix it — the row count inside
+the window is still unbounded.
+
+**Smell patterns:**
+- `$rows = $q->get(); foreach ($rows as $r) { $total += $r->amount; }` → `SUM(amount)`
+- `count($q->get())` → `$q->count()`
+- `foreach ($rows as $r) { $byKey[$r->plan] += $r->amount; }` → `GROUP BY plan, SUM(amount)`
+- top-N-by-group built by loading all rows, grouping in PHP, `arsort`, `array_slice(…, N)`
+  → `GROUP BY … ORDER BY SUM(...) DESC LIMIT N`
+
+**Ask:** "Is every field read from these rows only being summed/counted/grouped?" If yes,
+the `->get()` should not exist — push the reduction into the query. Memory then bounds to
+O(1) (totals) or O(distinct groups), not O(all rows).
+
+**Required pattern:** `selectRaw('COUNT(*) … SUM(…) …')`, `groupBy(...)`, `orderByRaw`,
+`limit` — return the reduced result. Keep any per-group PHP fallback (e.g. a `?:` label
+coalesce) running over the *grouped* result, not the raw rows.
+
+**Corpus evidence:**
+- "Subscription report materializes every matching row" (`fluentformpro#249`, `ReportHelperPro::getSubscriptions`) — `$query->get()` then a PHP loop summed recurring totals and built a top-5-plans chart over a caller-controlled window; a 366-day span clamp did not bound the rows. Fix: `COUNT`/`SUM` + `GROUP BY (plan_name, item_name)`.
+
+---
+
+## Redundant duplicate scans (query-per-category)
+
+The **same** scan executed once per category — a per-type / per-status / per-bucket
+helper called N times (`getX($a)` then `getX($b)` …) where a single query grouped by
+that dimension would return every category in one pass. Each call re-scans the same
+table over the same window with only the category filter changed.
+
+**Smell patterns:**
+- `getPaymentsByType($s, $e, 'subscription')` **and** `getPaymentsByType($s, $e, 'onetime')`
+  on the same table/window → one `GROUP BY transaction_type` scan
+- a `foreach ($statuses as $st) { $totals[$st] = countWhereStatus($st); }` → `GROUP BY status`
+- calling the same report helper once per form when a `GROUP BY form_id` covers all
+
+**Watch the delegation trap:** consolidating a hand-rolled query into a shared per-category
+helper can *introduce* this — "one call per type" reads clean but doubles the scans vs a
+prior single grouped query. When a refactor replaces one query with N helper calls, count
+the scans before/after.
+
+**Required pattern:** one query grouped by the category dimension (returning both/all
+categories), then let each caller read its slice from the single result.
+
+**Corpus evidence:**
+- "Payment summary now scans transactions twice" (`fluentform#1113`, `ReportTools::getPaymentSummary`) — delegated to `getPaymentsByType()` once per type = two transaction range-scans where the prior code did one grouped scan; a regression re-introduced by the delegation. Fix: a single `getPaymentBreakdown()` grouped by `(transaction_type, status, currency)`.
+
+---
+
+## Aggregated integer overflow on 32-bit PHP
+
+A SQL aggregate over a monetary/counter column — `SUM(amount_in_cents)`, `SUM(quantity)` — cast to `(int)` in PHP. On 32-bit PHP `PHP_INT_MAX` is 2,147,483,647; a cents SUM past ~$21.4M silently overflows to a wrong/negative number. Grep is clean on 64-bit dev boxes, so this never reproduces locally — reason about it, don't test-and-move-on.
+
+**Smell patterns:**
+- `(int) $row->total_cents`, `(int) $row->sum_amount` where the column is `SUM()`/`COUNT()` of money or a growing counter
+- `intval($aggregate)` before a `/ 100` money conversion
+
+**Required pattern:** cast summed money to `(float)` (exact for integers up to 2^53 ≈ $90T) before dividing, or use `bcmath`/string math if exactness beyond that matters. `(int)` is fine only for values provably under 2^31 (a single row's column, a bounded count).
+
+**Corpus evidence:**
+- "Aggregated cents can overflow on 32-bit PHP" (`fluentformpro#249`, `ReportHelperPro::getSubscriptions`) — `(int) SUM(recurring_amount)` on the subscription totals; fixed to `(float)`.
+
+---
+
+## Repeated filter predicates without a supporting index
+
+A query (especially one a caller can invoke repeatedly, or over a caller-controlled date range) filters a growing table by the same non-PK columns — `WHERE created_at BETWEEN … AND status IN (…) [AND form_id = …]` — and the table has **no index** covering those columns. Each call is a full scan; the report may run several such scans per invocation.
+
+**How to check:** read the table's migration (`CREATE TABLE`) and list its keys. Match the report's `WHERE`/`GROUP BY`/`ORDER BY` columns against them. Note the query *shapes* (all-forms vs form-scoped) — the index's leading column should match the most-selective equality predicate common to them.
+
+**Required pattern:** add an index suited to the predicates (equality columns first, then the range), in an **upgrade** migration that also alters existing tables — not only the initial `CREATE` (which skips installed sites). Verify the migration's trigger actually runs on in-place updates, not just activation. **Own the index where the table is owned** — grep both repos; adding it to a duplicated migration in the wrong plugin is a cross-boundary duplication smell.
+
+**Corpus evidence:**
+- "Subscription report filters lack a supporting index" (`fluentformpro#249`, `ReportHelperPro::getSubscriptions`) — filters `created_at`/`status`/`form_id` on `fluentform_subscriptions` with only a PK. Note: the table is owned by the *free* plugin, so the index belongs in the free migration, not the Pro reporting PR.
 
 ---
 
@@ -308,6 +393,65 @@ intermediate values that downstream code knows to ignore.
 
 ---
 
+## Key-name match without positional anchoring (recursive walker over-reach)
+
+When a recursive walker visits every node of a decoded document (form meta,
+options blob, settings JSON, API payload) and dispatches on the **key name
+alone**, any rule written for one context silently applies everywhere that name
+occurs. The rule is correct where it was meant to fire and destructive where it
+was not. Severity: **High** — it corrupts unrelated third-party data on the
+write path, and the corruption is invisible until someone re-imports.
+
+Ask for every key-specific rule inside a recursive walker: *what anchors this
+to the node I meant?* If the answer is "the key is called X", that is not an
+anchor — it is a name collision waiting for an add-on to pick the same word.
+
+**Smell patterns:**
+- `sanitizeNode(&$node)` recurses into every array/object member and calls
+  `applyRule($key, $value)` for each; `applyRule()` is a chain of
+  `if ('some_key' === $key) { return transform($value); }`.
+- A sanitizer written for `$field['attributes']['x']` reached instead by key
+  name, so `$settings->integrations->x` and `$design->widget->x` get it too.
+- Generic words as keys: `autocomplete`, `type`, `mode`, `display`, `format`,
+  `value`, `status`, `class`. The more generic the word, the more certain the
+  collision.
+- The transform is **lossy for non-matching input** (returns `''`, a default,
+  or `absint()`), so a boolean/array/object under the same key is destroyed
+  rather than passed through.
+
+**Required pattern:** anchor on position, not name — sanitize the container
+when you reach it, so the rule can only reach members of that container:
+
+```php
+if ('attributes' === $key) {
+    $value = self::sanitizeFieldAttributes($value);   // scoped to this node
+}
+```
+
+…rather than `if ('autocomplete' === $key)` evaluated at every depth.
+
+**How to verify (do not read-only this one):** construct a document carrying the
+key in an *unrelated* branch — a boolean, an array, a nested config object —
+run it through the walker, and assert those values are unchanged while the
+intended one is transformed. A source read cannot distinguish the two cases.
+
+**Watch for the sibling rules.** This defect arrives by copy-paste: a new
+`if ('x' === $key)` added beside existing ones inherits their scoping bug. When
+you find one, enumerate every branch in the same dispatcher and report the
+whole set, noting which are pre-existing.
+
+**Corpus evidence:**
+- `fluentform-dev#1246` (2026-09-24) — `TransferService::sanitizeJsonNode()`
+  walks all decoded form meta and calls `sanitizeAttributeControlSetting($key,
+  $value)` at every depth. A new `if ('autocomplete' === $key)` branch rewrote
+  *every* JSON property named `autocomplete` — an add-on's boolean flag became
+  `''`, a nested select2 config object became `''` — because `sanitize()`
+  returns `''` for anything outside its token allowlist. Caught by a human PR
+  reviewer, **not** by this skill: the detector had been asked "is the import
+  path sanitized?" and correctly answered yes. Three sibling branches
+  (`max_repeat_field`, `display_mode`, `display_type`) carry the same flaw and
+  predate the PR.
+
 ## Normalizer output assigned to destructive destination
 
 When a normalizer / sanitizer / transformer function can return `''`, `null`,
@@ -354,6 +498,117 @@ When reviewing, grep changed PHP for `normalize`, `extract`, `sanitize`,
 `parse` function definitions. For each, trace callers — every assignment of
 the return value to a model attribute or `update_post_meta` key is a
 potential finding. Confirm a guard exists between normalizer and assignment.
+
+---
+
+## Auxiliary source populates a primary keyed aggregate (enrich vs populate)
+
+When a function returns a collection **keyed by some dimension** (currency, form,
+user, day, status) and builds it from **more than one source**, each source is
+either a **populate** source — it defines *which keys exist* — or an **enrich**
+source — it only *adds fields to keys that already exist*. The bug is an enrich
+source that silently creates keys: a baseline/previous/comparison/default/fallback
+fold calls `ensure($k)` / `$map[$k] ??= …` / `$map[$k] = …` instead of guarding
+with `if (isset($map[$k]))`. The result carries phantom entries — zero-total,
+zero-count keys that no primary row produced — and any downstream consumer keyed
+on the map's **emptiness or cardinality** (an "empty ⇒ no results" branch, a
+`count() > 1 ⇒ multi-*` flag, a "dominant key" pick) is now wrong.
+
+This is the set-membership cousin of the boolean two-axis grid (SKILL Pass I.2):
+draw the membership grid for primary set A and auxiliary set B and walk **every**
+cell, especially **B-only**:
+
+```
+              in A (current)     not in A
+in B (prev)   enrich A[k]  ✅     ← MUST NOT create A[k]  (the usual miss)
+not in B      A[k] only    ✅     n/a
+```
+
+**Smell patterns:**
+- Two loops over two datasets writing the same accumulator; the second loop
+  (previous/baseline/prior/comparison/fallback/default) calls the same
+  `ensure()`/create helper as the first instead of a membership guard.
+- A "growth", "delta", "trend", "vs previous period" computation whose baseline
+  rows are folded into the per-key output rather than only into a scalar total.
+- A LEFT/OUTER join or `array_merge` of a secondary map where only-right-side /
+  only-in-B entries get carried into a result meant to represent A.
+- A blended scalar (blended total/growth) and a per-key breakdown built in the
+  same pass — correct blended math but the per-key map over-populated.
+
+**Required pattern:** the enrich source updates existing keys only; its scalar
+contribution (for blended math) is kept separately so totals stay unchanged:
+
+```php
+foreach ($previousRows as $r) {
+    $prevBlendedTotal += $r->amount;          // scalar baseline: every row counts
+    if (isset($byKey[$r->key])) {             // per-key: enrich, never populate
+        $byKey[$r->key]['prev'] += $r->amount;
+    }
+}
+```
+
+**Degenerate-input probe (do this, don't reason about it):** feed **empty primary
++ non-empty auxiliary** (no current rows, history exists) and trace the real
+return value. If the documented "empty ⇒ no-results / zero" contract does not
+hold — or a `multi-*`/cardinality flag flips — that's the finding. This single
+probe catches the whole class and belongs in the test suite as its own case.
+
+**Corpus evidence:**
+- `fluentformpro#251` (`ReportHelperPro.php:290`) — the subscription report's
+  previous-period loop called `ensure($code)`, so a currency present only in the
+  growth-baseline window created an empty `by_currency` block; a report with no
+  current subscriptions but historical data returned non-empty currency blocks
+  and the MCP layer reported data (and `multi_currency`) instead of its "No active
+  subscriptions" result. Fix: guard `if (isset($byCur[$code]))`; keep adding every
+  previous row to the blended baseline scalar.
+
+Severity: **High** (silent wrong output + broken empty-state contract); **Blocking**
+when the contaminated cardinality/emptiness drives an authorization or billing
+branch.
+
+---
+
+## GROUP BY / ORDER BY alias shadows a raw column (silent regroup)
+
+A query selects a **normalization expression** under an alias that happens to
+match a real column name — `COALESCE(NULLIF(s.plan_name,''), NULLIF(s.item_name,''), '…') AS plan_name`,
+`UPPER(COALESCE(x.currency, ?)) AS currency` — then writes `GROUP BY plan_name`
+or `GROUP BY currency`. In MySQL, GROUP BY resolves an unqualified name to a
+**FROM-clause column first, the select-list alias only if no column matches**. So
+the query silently groups by the *raw* column, not the expression: rows the
+expression would separate get merged under one arbitrary label with a summed
+value, and rows the expression would unify (`NULL` vs `''`, `usd` vs `USD`) split
+into duplicate groups. A downstream PHP re-aggregation by the projected value can
+mask the *duplicate-split* half, but the *merge* half is lost in SQL and
+unrecoverable — top-N / breakdown output is corrupted.
+
+**Smell patterns:**
+- `SELECT <expr> AS name … GROUP BY name` (or `ORDER BY name`) where `name` is
+  also a column in any FROM/JOIN table. Especially `plan_name`, `currency`,
+  `status`, `type`, `name`, `title` — common column names reused as aliases.
+- The expression normalizes (`COALESCE`, `NULLIF`, `UPPER`, `LOWER`, `IFNULL`,
+  `CASE`) so raw-column grouping ≠ expression grouping.
+
+**Required pattern:** group/order by the **select ordinal** or repeat the
+expression — never the bare shadowing alias:
+
+```sql
+SELECT UPPER(COALESCE(NULLIF(x.currency,''), ?)) AS currency,
+       COALESCE(NULLIF(s.plan_name,''), NULLIF(s.item_name,''), 'Unnamed') AS plan_name,
+       SUM(s.amount) AS amount_cents
+FROM …
+GROUP BY 1, 2          -- ordinals bind to the SELECT expressions, not raw columns
+ORDER BY amount_cents DESC
+```
+
+**Corpus evidence:**
+- `fluentformpro#251` (`ReportHelperPro.php:247`) — `GROUP BY currency, plan_name`
+  grouped by raw `sub.currency` + raw `s.plan_name`; two subscriptions with
+  `plan_name=''` and distinct `item_name`s ("Alpha", "Beta") collapsed into one
+  arbitrary label with the combined amount, corrupting `top_plans`. Fixed with
+  `GROUP BY 1` / `GROUP BY 1, 2`.
+
+Severity: **High** (silent data corruption in aggregate output).
 
 ---
 
@@ -407,7 +662,7 @@ When this criteria reference is loaded, the detector MUST:
    `wp_get_object_terms(` and `get_terms( ... 'object_ids' => ... )`, also
    verify the result is `array_unique`'d or queried with `'fields' => 'ids'`
    followed by dedup. Missing → emit unbounded-query finding (severity High).
-2c. **Refactor-mode re-scan.** If `git log origin/dev...HEAD --oneline` returns
+2c. **Refactor-mode re-scan.** If the resolved review-scope commit log returns
    any commit whose subject matches `/refactor|modularize|extract|split/i`, OR
    the diff shows large `-` blocks in one file matched by similar large `+`
    blocks in another file (function move), re-run rules 2, 2a, and 2b against
@@ -433,8 +688,25 @@ When this criteria reference is loaded, the detector MUST:
    not, emit atomicity finding.
 7. For every test marked skipped that touches a data-integrity surface, emit a
    Blocking finding.
+7a. **Enrich-vs-populate scan.** For every function returning a map/assoc array
+   keyed by a dimension that is built from **two or more** loops/sources, identify
+   the primary (defines keys) and any auxiliary source whose loop matches
+   `/previous|prior|baseline|comparison|delta|growth|fallback|default/i` or a
+   LEFT/OUTER-join / `array_merge` of a secondary map. If that auxiliary loop
+   creates keys (`ensure(`, `$m[$k] =`, `$m[$k] ??=`) instead of guarding with
+   `isset($m[$k])`, emit an enrich-vs-populate finding, AND construct the
+   empty-primary + non-empty-auxiliary input to confirm the emptiness/cardinality
+   contract of every downstream consumer still holds. Severity High (Blocking when
+   the map's emptiness/cardinality drives an auth or billing branch).
+   Corpus: `fluentformpro#251`.
+7b. **GROUP BY / ORDER BY alias-shadow scan.** For every changed query with a
+   `GROUP BY`/`ORDER BY` naming an unqualified identifier, check whether that
+   identifier is BOTH a select-list alias built from an expression AND a real
+   column in any FROM/JOIN table. If so, emit an alias-shadow finding (require
+   `GROUP BY <ordinal>` or the repeated expression). Watch `plan_name`, `currency`,
+   `status`, `type`, `name`, `title`. Corpus: `fluentformpro#251`.
 8. Default severities: `Blocking` for skipped data-integrity tests, non-atomic
    state changes, non-unique lookup updates; `High` for N+1, unbounded queries,
-   inverted ranges; `Medium` for repeated writes and meta-uniqueness assumptions.
-9. Emit findings with `category: "perf"` for performance issues, `"data-integrity"`
+   inverted ranges, enrich-vs-populate leaks; `Medium` for repeated writes and meta-uniqueness assumptions.
+9. Emit findings with `category: "perf-and-integrity"` for performance issues, `"data-integrity"`
    for correctness issues. Both belong to this single detector. Cap at 50 combined.

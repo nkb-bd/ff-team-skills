@@ -10,6 +10,12 @@ Used by `engineering-review` Pass 5. Load when any `.js` file has changed.
 - Every `e.target.closest('.selector')` result null-checked — returns `null` if no ancestor matches
 - Optional chaining `?.` preferred over manual null checks for deeply nested access
 
+## Collection Mutation (silent data loss)
+
+- No `.splice()` / `.push()` / `.unshift()` / `delete arr[i]` on a collection that is being iterated by the SAME loop — inside `_ff.map`/`_.map`/`lodash.map`/`.map`/`.forEach`/`.each` over that array, or a forward `for (i=0; i<arr.length; i++)` over it. `splice(i,1)` slides the next element into slot `i`, the cursor advances past it, so every other match is silently skipped → partial data loss with no error. (Real case: FormEditor.vue `garbageCleaner()` dropped every other conditional-logic condition when a field was deleted, 15→7.) Require the immutable form: build a new array with `.filter()` / `.reduce()` and reassign, or iterate a copy (`[...arr]`) / a reverse index loop. Applied to the pre-fix diff, this flags the `_ff.map(conditions, (c,i) => conditions.splice(i,1))`.
+- String matching a deleted/renamed key uses exact `===`, not `.startsWith()` / `.includes()` — prefix match over-removes siblings whose name begins with the target (deleting `email` must not drop conditions on `email_confirm`).
+- Guard: `node dev/security/scripts/lint-mutate-while-iterating.mjs` (AST, scans `.vue` + `.js` across free + Pro) mechanically pins this class; the checklist item carries the cases the AST guard can't bind (mixed iterators, `for`-index loops).
+
 ## Event Handling
 
 - `addEventListener` in any setup/init function has a matching `removeEventListener` in teardown
