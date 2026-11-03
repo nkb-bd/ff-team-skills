@@ -2,7 +2,7 @@
 name: bug-fix
 description: >
   Disciplined bug-handling workflow. Default mode: fix a known bug via reproduce → minimise →
-  hypothesise → instrument → fix → regression-test. Discovery mode (`/bug-fix find`): sweep
+  hypothesise → instrument → debunk candidate fixes → fix → regression-test. Discovery mode (`/bug-fix find`): sweep
   the plugin for new bugs using a Finder → Verifier → Feedback loop. Replaces the previous
   `diagnose` and `debugger` skills.
 when_to_use: >
@@ -21,7 +21,7 @@ The single canonical bug-handling skill. Replaces `diagnose` (the reproduce → 
 
 Two modes:
 
-- **Fix (default)** — user has reported a specific bug. Six phases: build a feedback loop → reproduce → hypothesise → instrument → fix + regression-test → cleanup. Triggered by "fix this", "diagnose this", "debug this", a bug report, or a failing-CI message.
+- **Fix (default)** — user has reported a specific bug. Seven phases: build a feedback loop → reproduce → hypothesise → instrument → choose the fix (debunk candidates) → fix + regression-test → cleanup. Triggered by "fix this", "diagnose this", "debug this", a bug report, or a failing-CI message.
 - **Find (`/bug-fix find`)** — sweep the plugin for new bugs. Finder → Verifier → Feedback pipeline writes a severity-grouped report. Triggered by "find bugs", "sweep this plugin", or "audit for bugs".
 
 If the user's intent isn't obvious from the trigger phrase, ask once. A wrong-mode start wastes 10–20 minutes.
@@ -129,6 +129,88 @@ Tool preference:
 
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
 
+## Phase 4.5 — Choose the fix (debunk before you patch)
+
+Phase 3 refused to anchor on the first plausible **cause**. This phase refuses to anchor on the first
+working **fix**. A green test proves the fix closes *your* repro; it proves nothing about whether the
+fix is the right one, the smallest one, or safe for the callers you did not think about.
+
+Do not skip this for a security, authorization, money, schema, or public-contract fix. For a typo or a
+one-line null guard with a single caller, state that you are skipping it and why.
+
+### 4.5a — Generate candidates at different depths
+
+The same bug can almost always be cut at more than one link in the chain. Produce **2–4 candidates**,
+deliberately at different depths — not three variations of the same patch:
+
+| Depth | Cuts | Typically |
+|---|---|---|
+| **Sink** | the damage | narrowest, closes one instance, leaves the class open |
+| **Carrier** | the flow | closes every caller through that helper |
+| **Source** | the input | closes the class, widest blast radius |
+| **Structural** | the shape that allowed it | the design change — invariant, type, chokepoint |
+
+For each, write one line on what it closes **and one line on what it leaves open**. A candidate with no
+stated gap has not been thought about.
+
+### 4.5b — Score each on the same axis
+
+| Axis | Question |
+|---|---|
+| **Blast radius** | Files, callers, and public contracts touched. Does it change a hook signature, a REST shape, a stored key, a DB column? |
+| **Class vs instance** | Does it close every path with this shape, or only the reported one? Name the siblings it covers. |
+| **Legitimate-traffic risk** | Enumerate real callers and inputs. Is it a no-op for all of them? If it changes behaviour for anyone who is not the attacker, say who. |
+| **Reversibility** | Can it be reverted cleanly? Migrations, backfills and removed hooks cannot. |
+| **Test seam** | Does the Phase 5 seam actually exercise *this* candidate's mechanism, or does the candidate move the bug out from under the test? |
+
+### 4.5c — Fan out skeptics to refute, one per candidate
+
+Spawn one sub-agent per candidate, clean context, same envelope shape Mode B uses for Finder/Verifier.
+Each skeptic's job is to **refute its candidate, not to rate it**. Do not tell a skeptic which candidate
+you prefer, and never give one skeptic two candidates to compare — a comparison invites it to pick a
+winner instead of breaking both.
+
+```yaml
+candidate: <one-sentence statement of the fix>
+diff_or_sketch: <the patch, or a precise description of it>
+bug_repro: <the Phase 1 loop and the exact symptom>
+chain: <source → carrier → sink from the hypothesis that survived Phase 4>
+repo_root: <abs path>
+stance: refute
+task: >
+  Find the input, caller, state, or configuration where this fix fails to close the bug,
+  or where it breaks behaviour that works today. Name file:line. If you cannot break it,
+  state which class of failure you ruled out and how — "looks correct" is not an answer.
+output_format: ndjson
+```
+
+Each returns findings in the canonical shape: `candidate`, `verdict` (`breaks-bug` | `incomplete` |
+`regresses-legit-traffic` | `survived`), `file`, `line`, `evidence`, `impact`.
+
+If the runtime cannot spawn sub-agents, run the refutations sequentially, one candidate at a time, and
+clear your reasoning between them — the point is independence, not parallelism.
+
+### 4.5d — Reconcile and pick one
+
+**The rule: the smallest change that closes the whole class and survived refutation.**
+
+Both halves bind. Do not read it as "smallest":
+
+- A candidate that closes only the reported instance is a **symptom fix** — Pass I.5's failure mode. The
+  next sibling ships the same bug. Reject it unless the class genuinely has one member, and prove that.
+- A candidate that closes more than the class is **scope creep in a fix commit**. Security fixes carry the
+  fix and its tests, nothing else. Record the wider change as a follow-up; do not ride it along.
+- If every candidate was refuted, you do not have a fix. Go back to 4.5a with what the skeptics taught you.
+  Do not patch the least-refuted one.
+- If the winner is structural (schema, hook contract, capability, deleting code you did not write), stop and
+  run `doubt-driven-development` on it before writing any of it.
+
+### 4.5e — Record the rejected candidates
+
+In the commit body or the PR description, one line each: what it was, why it lost. This is the whole
+payoff — the next person to touch this code does not re-propose the candidate you already killed, and a
+reviewer can see that the narrow fix was a choice rather than the only thing that occurred to you.
+
 ## Phase 5 — Fix + regression test
 
 Write the regression test **before the fix** — but only if there is a **correct seam** for it.
@@ -141,9 +223,10 @@ If a correct seam exists:
 
 1. Turn the minimised repro into a failing test at that seam.
 2. Watch it fail.
-3. Apply the fix.
+3. Apply **the candidate that won Phase 4.5** — not a new idea that occurred to you while writing the test. If a better one did occur to you, it is a new candidate: take it back through 4.5c and let a skeptic try to break it.
 4. Watch it pass.
 5. Re-run the Phase 1 feedback loop against the original (un-minimised) scenario.
+6. Confirm the green test exercises the mechanism the winning candidate cuts. A test that passes because the fix moved the bug out from under the seam is not a regression test.
 
 ## Phase 6 — Cleanup + post-mortem
 
@@ -154,10 +237,13 @@ Required before declaring done:
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
+- [ ] The Phase 4.5 candidates that lost are recorded in the commit / PR body with one line each on why
 - [ ] **Security/authz fixes only — sibling sweep done.** A vuln is almost never alone. Before declaring done, enumerate every sibling of the patched path and confirm each is safe or fixed:
   - For an **IDOR / authorization-scope** bug (handler authorizes a request-named scope like `form_id` but acts on attacker-supplied IDs), find every branch of the same dispatcher and every other handler that reads an ID array (`entries[]`, `ids[]`, `submission_ids[]`). Confirm each re-scopes the IDs (`->where('scope_id', $x)->whereIn('id', $ids)`) or authorizes the *fetched rows'* real scope. The bug lives in the *asymmetry* between branches — the delete branch that forgot the scope filter its siblings apply.
   - When the bug references a **known CVE**, sweep the CVE's sibling code paths explicitly; the original patch often hardened only the reported instance. (fluent-forms WPScan req 11316830 was a delete-branch sibling of CVE-2026-5396 that the original fix missed.)
   - Static review catches at most one path at a time. For authz, add/note a runtime **authz-matrix** test seam (low-priv user × each mutating endpoint × cross-scope IDs → expect 403 / 0 rows) — that is the only thing that locks the class.
+
+**Before the commit — route the high-stakes ones out.** If the winning candidate touched a schema, a public hook/filter contract, a capability or policy boundary, or any security control, run `doubt-driven-development` on it now. Phase 4.5 refuted the candidates against each other; this refutes the one you kept against the decision to ship it at all. If the fix closed a real vulnerability, `security-postmortem` turns it into a guardrail so the class cannot return — that is a separate pass, after the fix lands.
 
 **Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to `/improve-codebase-architecture` with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than when you started.
 
