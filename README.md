@@ -48,6 +48,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 
 | Skill | Purpose |
 |---|---|
+| `git-flow` | Commit / branch / PR / push discipline in one place: commit format, no-attribution rule, the three consent gates (push, merge, force-push), draft-PR default, PR body rebuilt from the repo template, ticket trailers, PHPCS-on-touched-files. |
 | `pr-descriptor` | Why-first PR description from git evidence, filling the repo PR template. |
 | `agents-onboarding` | Create or refresh `AGENTS.md` onboarding docs for coding agents. |
 | `setup-code-review-graph` | Wire the code-review-graph MCP server into a repo (`.mcp.json`, CLAUDE.md block, seed build). |
@@ -63,6 +64,7 @@ FF team Claude Code skill library — orchestrator workflows, review gates, and 
 | "Review this PR" / "is this ready to merge" | `pre-merge-review` (`light` for single-file diffs) |
 | "Deep audit" / quarterly security sweep | `plugin-audit` |
 | "Write the PR description" | `pr-descriptor` |
+| Commit / branch / open a PR / push / merge / force-push | `git-flow` |
 | "Stress-test my plan" | `grill-with-docs` (with docs) / `grill-me` (without) |
 | "Design this API" / "design it twice" | `design-an-interface` |
 | "Teach me how X works" / "walk me through this PR" | `explain-this` |
