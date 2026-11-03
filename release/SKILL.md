@@ -1,18 +1,24 @@
 ---
 name: release
 description: >
-  Cut a complete WordPress plugin release: bump the version (plugin-header
-  Version, the in-code VERSION constant, readme.txt Stable tag) in lockstep,
-  generate the changelog from EVERY user-facing commit since the last release
-  TAG, build the distribution zip via the repo build script, and create the
-  annotated release tag. Pre-flight consistency and safety checks fail loudly
-  so a stale or partial release cannot silently ship. Supports paired free/pro
-  plugins.
+  Cut a complete WordPress plugin release: bump the version in lockstep by
+  invoking the `version-bump` skill (plugin-header Version, the in-code VERSION
+  constant, readme.txt Stable tag), generate the changelog from EVERY
+  user-facing commit since the last release TAG, build the distribution zip via
+  the repo build script, and create the annotated release tag. Pre-flight
+  consistency and safety checks fail loudly so a stale or partial release cannot
+  silently ship. Supports paired free/pro plugins.
 when_to_use: >
-  When the user wants to cut or prep a release of a WordPress plugin —
-  "bump to X.Y.Z", "release X.Y.Z", "prep the release", "version bump",
-  "update changelog", "build the release", "tag the release", "publish a new
-  version". Especially useful for the FluentForm free + pro pair (or
+  When the user wants to cut or prep a FULL release of a WordPress plugin —
+  "release X.Y.Z", "prep the release", "update the changelog", "build the
+  release", "tag the release", "publish a new version". For a bare version-only
+  bump ("bump the version", "bump to X.Y.Z", "set the version"), route to the
+  `version-bump` skill instead — this skill invokes it for its lockstep bump.
+  Also for SYNC mode — "sync the changelog", "update the changelog
+  again", "new commits landed after the release commit, fold them in", "check
+  if the changelog needs updating" — where the current unreleased version's
+  changelog block already exists and just needs late commits folded in WITHOUT
+  a version bump. Especially useful for the FluentForm free + pro pair (or
   FluentPlayer, FluentCRM, FluentCommunity) where the two plugin versions must
   move together.
 context: fork
@@ -23,6 +29,11 @@ effort: medium
 # Release Bump
 
 Single canonical entry point for "bump version + add changelog" on a WP plugin or a paired free/pro plugin pair. Designed to fail loudly on inconsistency rather than silently producing a half-bumped release.
+
+**Two modes — pick before Step 0:**
+
+- **Bump mode** (default): version is moving to a new number. Run Steps 0 → 7.
+- **Sync mode** (`--sync`): the current version's changelog block already exists and is not yet tagged; only fold in user-facing commits that landed after it, with **no** version change. Jump straight to *Sync mode* (below), which reuses Step 3's classifier. Use this when the operator says "sync/update the changelog again" after more commits merged into the same unreleased version.
 
 ## Live context
 
@@ -38,86 +49,34 @@ Single canonical entry point for "bump version + add changelog" on a WP plugin o
 | Input | Required? | Example |
 |---|---|---|
 | Target version | required | `6.2.4` |
-| Paired pro path | optional | `/Volumes/Projects/work/forms/wp-content/plugins/fluentformpro` (or auto-detect — see Step 0c) |
+| Paired pro path | optional | `/Volumes/Projects/work/forms/wp-content/plugins/fluentformpro` (or auto-detect — `version-bump` handles pairing) |
 | Changelog entries | optional | If omitted, derived from `git log` since the previous release commit, filtered by Step 3 rules |
 | Release date | optional | If omitted, today's local date (`May 25, 2026` style — match the existing changelog format in this readme) |
 | Branch name prefix | optional | If omitted, default `lukman/release-` (matches the GitHub org branch-naming rule that rejects `release/*` and `release-fix/*` at the org level — see Step 7 lesson) |
 
 ---
 
-## Step 0 — Pre-flight discovery
+## Step 0 — Bump the version (delegated to `version-bump`)
 
-### 0a. Identify all version locations
+The entire lockstep bump is owned by the **`version-bump`** skill: discovering
+every version location (`Version:` header, `_VERSION` constant, `Stable tag:`),
+validating the target (semver, forward-only, magnitude), auto-detecting the
+paired sibling, working-tree hygiene, and editing all version locations across
+the plugin (or both halves of a pair).
 
-For each plugin root, find every place the version string lives:
+**Invoke `version-bump` first — before touching the changelog** — so it runs
+against a clean tree. Pass it the target version and, for a pair, the sibling
+path (or let it auto-detect). Its discovery/validation/paired-detection/hygiene
+logic (its Steps 0–1) is the single source of truth; do not re-implement or
+hand-edit the version strings here.
 
-```bash
-# Plugin header in main plugin file
-grep -n "^[[:space:]]*\(\*[[:space:]]*\)\?Version:" *.php
+When it returns, all version locations are edited but uncommitted. If it **STOP**s
+on a mismatch (locations disagree, sibling out of sync, dirty tree, downgrade,
+long-lived branch), resolve that before continuing — the release does not
+proceed on a failed bump.
 
-# In-code constants
-grep -rn "FLUENTFORM_VERSION\|FLUENTFORMPRO_VERSION\|PLUGIN_VERSION\|_VERSION'\s*,\s*'" *.php
-
-# readme.txt Stable tag
-grep -n "^Stable tag:" readme.txt
-```
-
-Normally that yields 3 locations per plugin: `Version:` header line, the `define('XXX_VERSION', '...')` constant, and `Stable tag:` in `readme.txt`. **All three must agree on the current version before the bump runs.**
-
-### 0b. Cross-plugin minimum version gates (when paired)
-
-When bumping a free/pro pair, also identify any cross-version compatibility constants and version_compare gates. These usually do not need to be bumped per release, but if the new release breaks back-compat with an older pair-half, they must be bumped together.
-
-```bash
-# Free's hard pro requirement
-grep -rn "FLUENTFORM_MINIMUM_PRO_VERSION\|MINIMUM_PRO_VERSION\|MINIMUM_CORE_VERSION" *.php
-
-# Pro's hard free requirement (and version_compare gates)
-grep -rn "FLUENTFORM_MINIMUM_CORE_VERSION\|version_compare.*FLUENTFORM" *.php
-```
-
-Surface every result so the operator can decide whether to bump the minimum-required constant. The default is **do not bump**.
-
-### 0c. Detect the paired repo automatically
-
-For WPManageNinja-style pairs, when the operator supplies only the free path, look for the pro alongside:
-
-```bash
-# Walk up to wp-content/plugins/ and look for known siblings.
-plugins_dir="$(dirname "$PWD")"
-case "$(basename "$PWD")" in
-  fluentform)        sibling="$plugins_dir/fluentformpro" ;;
-  fluentformpro)     sibling="$plugins_dir/fluentform" ;;
-  fluent-crm)        sibling="$plugins_dir/fluent-crm-pro" ;;
-  fluent-crm-pro)    sibling="$plugins_dir/fluent-crm" ;;
-  fluent-player)     sibling="$plugins_dir/fluent-player-pro" ;;
-  fluent-player-pro) sibling="$plugins_dir/fluent-player" ;;
-esac
-
-# If the sibling directory exists AND its current version matches the free's, treat as a pair.
-```
-
-If both directories exist and their current versions agree, run the bump in lockstep across both. If versions disagree, **STOP** and surface the mismatch — never bump only one half of a pair that was historically synced.
-
-### 0d. Working-tree hygiene
-
-```bash
-git status --short    # must be empty (or only contain the files this skill will touch)
-git rev-parse --abbrev-ref HEAD   # must NOT be master / main — bump goes on a release branch
-```
-
-Refuse to run when uncommitted changes exist that this skill did not author. Refuse to run when the current branch is the long-lived deployment branch (`master`, `main`, or `dev` unless the operator passes `--allow-direct`).
-
----
-
-## Step 1 — Version validation
-
-Before any file edit:
-
-1. **Semver shape:** target must match `^\d+\.\d+\.\d+(-[a-z0-9.-]+)?$`. Reject `6.2`, `6.2.4.1`, `6.2.4 beta`, etc.
-2. **Forward-only:** `version_compare($target, $current, '>')` must be true. Reject decrements unless the operator passes `--allow-downgrade`.
-3. **No skip-bumps:** if the previous changelog entry is X.Y.Z and the target is X.Y.Z+2 (e.g. 6.2.3 → 6.2.5), warn but allow.
-4. **Patch vs minor vs major sanity:** look at the staged changelog entries — if any line starts with `Adds` (new feature) or breaks a documented contract, suggest a minor or major bump instead of a patch. Operator can override.
+**Sync mode does NOT bump** — it never calls `version-bump`. Jump straight to the
+*Sync mode* section below.
 
 ---
 
@@ -186,18 +145,75 @@ Present the derived list back to the operator for confirmation **before** writin
 
 ---
 
-## Step 4 — Edit in lockstep
+## Sync mode — fold late commits into an unreleased changelog block (no bump)
 
-For each plugin in the pair:
+Triggered by `--sync` or phrasings like *"sync the changelog"*, *"update the
+changelog again"*, *"new commits landed after the release commit"*, *"check if
+the changelog needs updating"*. This is **NOT** a bump. The current version's
+changelog block already exists (committed, or sitting unstaged in the working
+tree); user-facing commits have landed since it was written and must be folded
+into that **same** block. No version location changes, no new heading.
 
-1. Update **all** of:
-   - `Version:` header in the main `.php` file
-   - The in-code `_VERSION` constant
-   - `Stable tag:` in `readme.txt`
-2. Prepend the new changelog block to the `== Changelog ==` section of `readme.txt`.
-3. Verify with `git diff --stat` that each plugin touched exactly 2 files (main `.php` + `readme.txt`).
+**When sync applies (all must hold):**
 
-For the paired bump, both plugins must end up on the same target version. After edit, re-run Step 0a and confirm all six locations (3 per plugin) now read the new version.
+1. All version locations already agree on the current version (grep the
+   `Version:` header, the `_VERSION` constant, and `Stable tag:`) — there is
+   nothing to bump, so `version-bump` is **not** invoked in sync mode.
+2. A `= <current> (Date: …) =` changelog block already exists.
+3. The current version is **NOT yet tagged**. `git tag --list "<current>" "v<current>"`
+   must be empty. If it IS tagged, the version already shipped — new commits
+   belong to the *next* version, so this is a real bump (run Step 0 —
+   `version-bump` — instead of sync).
+
+**Boundary (what counts as "late"):** take the later of
+
+- the last commit that edited the changelog: `git log -1 --format=%H -- readme.txt`, and
+- the version-bump / `RELEASE:` commit for the current version (`git log --oneline -S"<current>" -- <main>.php | head -1`).
+
+If the changelog block is still uncommitted in the working tree, there is no
+"commit after it" — instead scan `<last-readme-commit>..HEAD` and **de-dupe
+against the bullets already present** in the block. The de-dupe step is the
+whole game: never emit a line whose behavior is already described.
+
+```bash
+current=$(grep -n "^= [0-9].*(Date:" readme.txt | head -1 | sed -E 's/.*= ([0-9.]+) .*/\1/')
+git tag --list "$current" "v$current"          # must be empty for sync
+boundary=$(git log -1 --format=%H -- readme.txt)
+git log --oneline "$boundary..HEAD"            # candidate late commits
+```
+
+**Then:** run the Step 3 classifier over `boundary..HEAD` (USER vs skip — drop
+`CHORE:`/`DOCS:`/lockfile/build-asset commits), draft one user-facing line per
+surviving commit in the existing block's voice, drop any already represented,
+slot each under the correct subsection (`Feature` / `Improvement` / `Fix` /
+`Security`) in the existing block, and present the delta to the operator before
+editing. Insert in place — **do not** touch `Version:`, the `_VERSION` constant,
+or `Stable tag:`.
+
+**A clean sync that finds nothing is a valid, expected result** — report
+"changelog already covers HEAD (N commits scanned, M skipped as internal)"
+rather than inventing filler.
+
+**Paired free/pro:** run sync independently in each repo — each half has its own
+post-changelog commits and its own block. Do not copy one repo's lines into the
+other.
+
+**Safety net for sync:** from Step 7 run only the changelog-relevant checks
+(block exists, ≥1 bullet, date sane). Skip every version-equality check — sync
+deliberately leaves versions untouched. Still refuse if the working tree holds
+unrelated unstaged changes this skill did not author.
+
+---
+
+## Step 4 — Write the changelog block
+
+The version locations were already edited in Step 0 by `version-bump`. Here, only
+the changelog changes:
+
+1. Prepend the new `= X.Y.Z (Date: …) =` block (Step 2/3 output) to the `== Changelog ==` section of `readme.txt`.
+2. Verify with `git diff --stat` that each plugin now shows exactly 2 files changed — the main `.php` (version, from Step 0) and `readme.txt` (version + changelog).
+
+For a paired bump, confirm both halves landed on the same target version — re-run `version-bump`'s Step 3 consistency check (or `grep -n "<target>"`) across all six locations.
 
 ---
 
@@ -236,7 +252,7 @@ For paired releases, link the two PRs to each other in the body so reviewers can
 
 ## Step 7 — Necessary checks (the safety net)
 
-Run these checks before declaring the bump done. Block on any **FAIL**, warn on **WARN**.
+Run these checks before declaring the release done. Block on any **FAIL**, warn on **WARN**. The version-location rows below re-verify what `version-bump` already enforced in Step 0 — kept here as the final release gate; the changelog, paired-release, and build-artifact rows are release-specific.
 
 | Check | Severity | How to verify |
 |---|---|---|
@@ -263,17 +279,14 @@ If any **FAIL** trips, stop and report. Do not push.
 ```
 read user request → derive target version + scope
     ↓
-Step 0 — discover all version locations + paired sibling
+Step 0 — invoke `version-bump` (discovery, validation, paired detection,
+         hygiene, lockstep edit of every version location)
     ↓
-Step 0d — abort if working tree dirty / on master
+Step 2/3 — derive changelog from git log since last TAG, filter, confirm with operator
     ↓
-Step 1 — validate target version (semver, forward-only, magnitude vs changelog)
+Step 4 — write the changelog block into readme.txt
     ↓
-Step 2/3 — derive changelog from git log, filter, present to operator for confirmation
-    ↓
-Step 4 — edit all version locations in lockstep
-    ↓
-Step 7 — run safety checks
+Step 7 — run safety checks (final gate; re-verifies the bump)
     ↓
 Step 5/6 — commit, branch, push, draft PR (paired if applicable)
     ↓
@@ -289,6 +302,7 @@ This skill does **not** tag or publish — that is a separate operator action. B
 - [ ] Tag `vX.Y.Z` on `master` in both repos
 - [ ] Build the distribution zips (if applicable)
 - [ ] Update WordPress.org SVN trunk (free plugin only)
+- [ ] Mirror the free release to its public GitHub repo + draft the GitHub Release (`public-mirror` skill)
 - [ ] Upload pro distribution to license server
 - [ ] Cross-link the two GitHub releases in their respective release notes
 
