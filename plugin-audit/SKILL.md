@@ -207,7 +207,11 @@ Check at minimum:
 - Memoization caches keyed only by request lifecycle (instance properties): correct as long as the class is instantiated per request, but fragile if the bootstrap pattern changes.
 
 **PHP 8+ type-fatal traps:**
-- `array_map`, `array_filter`, `array_walk`, `count`, `foreach` over a value that isn't guaranteed to be an array. PHP 7.x warned, PHP 8+ throws `TypeError`. Look especially at code paths that take user-submitted JSON / REST payloads where a field could be `null` or a scalar.
+- `array_map`, `array_filter`, `array_walk`, `array_merge`, `array_keys`, `array_values`, `count`, `foreach` over a value that isn't guaranteed to be an array. PHP 7.x warned, PHP 8+ throws `TypeError`. Look especially at:
+  - **User-submitted JSON / REST payloads** where a field could be `null` or a scalar.
+  - **Variables assigned only inside a conditional or loop body**, then used unconditionally after it — on the empty/no-match path the variable is undefined (`null`). e.g. `$x` set only inside `if ($v = ...)` / `foreach`, then `array_filter($x)` below the block. (This is exactly how the Stripe "Push metadata" checkout fatal shipped — `StripeProcessor::getIntentMetaData()`: `$metaData` built only inside the loop, then `array_filter($metaData)` unguarded.)
+  - **Helper results that degrade to a scalar/null on the empty path**: `ShortCodeParser::parse()` returns `''` for `null`/empty input; `ArrayHelper::get($a, $k)` with **no** array default returns `null`. Feeding either straight into an array-only builtin is a PHP 8 fatal. Fix with `(array)`, an `is_array()` guard, or an `[]` default — but only where the value can actually be non-array, not reflexively everywhere.
+- **Never baseline this class, and don't trust a green analyzer as proof of absence.** PHPStan reports the undefined-variable half as `Variable $x might not be defined` (level 2) — the Stripe fatal was sitting in `dev/phpstan-baseline.neon` AND PHPStan was not wired into the gate, so it shipped anyway. PHPStan also can't see the `parse()`/`ArrayHelper::get()` sub-cases at all (it types them `mixed`). `dev/tests/detect_php8_array_fn_nonarray_guard.php` covers what PHPStan can't. A `might not be defined` finding is a bug to fix, not to suppress.
 
 ## Traceability Checks
 
