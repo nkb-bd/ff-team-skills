@@ -203,6 +203,50 @@ no shared corpus), severity. Rules added here are loaded by the detector
 alongside the base rules.
 
 <!-- BEGIN project-specific rules -->
+
+## Presence-based flag used as a visibility signal, without checking the gated content's own breakpoint
+
+A computed/prop derived from "is this slot/prop populated" is not the same claim as
+"is the thing in that slot/prop visible and taking space right now." When that
+presence-flag also gates an UNRELATED responsive class (a gap, a hide/show on another
+sibling element), the gate silently goes stale the moment the slotted content gets its
+own independent breakpoint rule.
+
+**Smell patterns:**
+- `:class="$slots.foo ? 'tighter-gap' : ''"` or `:class="someFlag ? 'hidden md:flex' : 'flex'"`
+  where `someFlag` is `Boolean($slots.foo)` / `Boolean(props.foo)` — pure presence, no
+  visibility check — and it gates a DIFFERENT element's responsive class, not the
+  slotted content itself.
+- The slotted/prop-passed component itself carries a Tailwind/CSS breakpoint class
+  (`hidden md:flex`, `hidden lg:block`, a `@media` display:none) that the presence-flag
+  was written before, or without reading.
+- A refactor moves a real, always-visible node (that correctly justified the gate) out
+  of the slot and replaces it with a conditionally-hidden placeholder/spacer — the flag
+  stays `true` by construction (slot is still populated) even though the replacement is
+  invisible at some viewports the original never was.
+
+**Required:** when a presence-based flag gates a responsive class on a DIFFERENT
+element than what's in the slot/prop, read that slotted/prop content's own classes.
+If it has its own breakpoint-gated visibility, the flag must be an explicit intent
+signal (a dedicated boolean prop set by each caller, e.g. `has-actions`), not an
+inference from presence. Ask: "at the narrowest breakpoint this component supports,
+does the slotted content actually occupy space, or does `hasX` just mean `wasPassed`?"
+
+**Severity:** High when the mismatch hides or crowds a real control (a destructive-
+or data-entry-action button qualifies as `Blocking` per the destructive-action floor);
+Medium for pure spacing drift.
+
+**Corpus evidence:** (local) `fluentform-dev#1641` — `FormTopbar.vue`'s
+`$slots.actions`-derived check hid the mobile rename-form icon and tightened the row
+gap on 5 screens whose "actions" content (`FormTopbarActionsSpacer`) was itself
+`hidden md:flex`, so it took zero space below `md` — the flag was true by slot
+presence while the thing it was supposedly protecting room for was invisible. Missed
+across two review rounds because detector prompts were scoped to the stated fix
+intent (desktop pill position) and never asked to cross-check the gated element's own
+responsive classes against the slotted content's; caught only by an external reviewer
+reading the diff without that inherited framing. Fixed by replacing the inference with
+an explicit `hasActions` prop set per-caller.
+
 <!-- END project-specific rules -->
 
 ---
@@ -216,5 +260,6 @@ When this criteria reference is loaded, the detector MUST:
 3. If any segment is missing, stub, hardcoded, or falls through to a placeholder, emit a finding.
 4. For each `props.config` / `props.actions` / `props.items` declared in a changed Vue file, verify the template actually uses it. If hardcoded, emit a finding.
 5. For each new CSS rule, verify the matched class / selector appears in some template. If not, flag as dead.
-6. Default severity `Blocking` for stub handlers and hardcoded dummy data; `High` for ignored config props and CTA-label mismatches; `Medium` for dead CSS and dropped filter context.
-7. Emit findings with `category: "traceability"`. Cap at 50.
+6. For each new or changed `$slots.x` / `props.x` presence-check that drives a responsive class (`hidden`, `md:flex`, `max-md:*`) on a DIFFERENT element, open the slotted/prop component and read ITS OWN classes — if it carries a breakpoint-gated visibility rule, confirm the presence-check accounts for it (see "Presence-based flag used as a visibility signal" below) rather than treating presence as a stand-in for visible-now.
+7. Default severity `Blocking` for stub handlers and hardcoded dummy data; `High` for ignored config props, CTA-label mismatches, and presence-vs-visibility flag mismatches that hide a real control; `Medium` for dead CSS, dropped filter context, and pure spacing drift from the same mismatch.
+8. Emit findings with `category: "traceability"`. Cap at 50.
