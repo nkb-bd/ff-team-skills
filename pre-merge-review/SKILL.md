@@ -90,7 +90,7 @@ If graph is not available, say nothing special and continue with git diff plus `
 | `.php` (Controllers, Policies) | permissions-and-capabilities, ui-to-backend-wiring, backwards-compatibility, performance-and-data-integrity |
 | `.php` (Services, Models, Views) | ui-to-backend-wiring, backwards-compatibility, performance-and-data-integrity |
 | `.php` (Hooks, Providers, Bootstrap) | permissions-and-capabilities, ui-to-backend-wiring, backwards-compatibility, performance-and-data-integrity |
-| `.scss` / `.css` | accessibility (focus-visible / outline-removal only) |
+| `.scss` / `.css` | accessibility (focus, and direction-sensitive or responsive layout affecting access to controls or status) |
 | `database/Migrations/*` or `migrations/*` | backwards-compatibility, performance-and-data-integrity |
 
 **Always run** `ui-to-backend-wiring` and `backwards-compatibility` regardless of file types — they are PR-shape checks, not file-type checks.
@@ -156,11 +156,12 @@ repo_root: <abs path>
 acceptance_criteria: <short summary>
 project_instructions: <short summary plus source paths>
 criteria_ref: references/detector-<name>.md
+workflow_checks: <matching rows from Required workflow checks for changed state and contracts>
 output_format: ndjson
 max_findings: 50
 ```
 
-Each sub-agent reads its criteria pack, walks every changed file relevant to its category, and emits **NDJSON to stdout** — one finding per line, no prose.
+Each sub-agent reads its criteria pack and applies the supplied workflow checks, walks every changed file relevant to its category, and emits **NDJSON to stdout** — one finding per line, no prose.
 
 If sub-agents are not available, emulate as **seven sequential passes** in this skill's outer agent. Don't skip detectors when running sequentially; just run them in series and concatenate the NDJSON.
 
@@ -223,7 +224,7 @@ These are the broad-spectrum, language- and pattern-specific checks. Add them to
 
 ### Worker bundles
 
-Spawn one sub-agent per bundle. Each receives the same envelope as a detector (`diff_path`, `changed_files`, `repo_root`, `output_format: ndjson`, `max_findings: 50`) plus the passes it owns. Gate by file type — skip a bundle whose files aren't in the diff.
+Spawn one sub-agent per bundle. Each receives the same envelope as a detector (`diff_path`, `changed_files`, `repo_root`, `output_format: ndjson`, `max_findings: 50`) plus the passes it owns and the matching required workflow checks. Assign each matching row to a running worker even in light mode. Gate by file type — skip a bundle whose files aren't in the diff.
 
 | Worker | Owns passes | Runs when |
 |---|---|---|
@@ -286,6 +287,8 @@ in `references/detector-performance-and-data-integrity.md`.
 **When the guard lives inside a recursive walker, do not answer from a read.**
 Build an input carrying the same key in an unrelated branch and run it.
 
+For text transformations, round-trip a documented valid literal through the changed save, render or export path. Compare its value at the consumer. Check the field contract for intentionally reserved syntax before reporting content loss.
+
 ### Pass B — Regression risk (all PR types)
 
 What currently-working behaviour could break?
@@ -299,6 +302,8 @@ For each changed file: what did it do before, is it still doing all of that?
 - Hook priority changed → now runs before/after something it depends on?
 - `isset()` replaced with direct access → key always exists in all contexts?
 - **Bug fixed in one function → does a copy-paste twin have the same bug?** A shared routine (sanitizer, escaper, deserializer, auth check) is often duplicated. Grep by name AND shape — `grep -rn "function .*[Ss]anitiz" app boot src` — not just callers: an orphaned duplicate with zero callers (e.g. `Helper::sanitizer()` shadowing `fluentFormSanitizer()`) is invisible to `get_impact_radius`/`callers_of`. Fix/flag every implementation and confirm the guard/detector's target list covers all of them.
+
+When the admin entry, manifest, lazy import or preload recovery changes, trace one open tab across an asset update. Check a missing entry at boot and a failed optional import after successful navigation when applicable. A persistent failure should leave usable controls or recovery guidance. Verify a successful unrelated load cannot reset a retry guard for the failing asset.
 
 ### Pass C — Code quality (all PR types)
 
@@ -332,11 +337,11 @@ Load `references/patterns-javascript.md`. Summary:
 - `fetch()` checks `response.ok` — 4xx/5xx don't throw.
 - `require()` inside `if/else` → both files bundle (document if intentional).
 
-### Pass F — Vue 2 patterns (Vue PRs)
+### Pass F — Vue patterns (Vue PRs)
 
-Load `references/patterns-vue.md`. Summary:
+Identify the Vue major and conventions from the changed package and build entry. Apply the following Vue 2 guidance to applicable modules. For Vue 3 modules, use their supported APIs and verify equivalent lifecycle, cleanup, and error handling.
 
-- Options API only — no `setup()`, `ref()`, `reactive()`.
+- For Vue 2 modules using the Options API, load `references/patterns-vue.md` and follow the project conventions.
 - `addEventListener` in `mounted()` → `removeEventListener` in `beforeDestroy()`.
 - `$on()`/`$root.$on()` → `$off()` in `beforeDestroy()`.
 - API calls use project REST client; all `.catch()` with user-visible message.
@@ -400,9 +405,28 @@ If any input produces a plausible-but-broken state, document it and either fix o
 
 **I.6 — Multi-source aggregates and SQL aliases.** Load the populate-vs-enrich and alias-shadow rules from `references/detector-performance-and-data-integrity.md`. Run the empty-primary/non-empty-auxiliary probe and verify `GROUP BY`/`ORDER BY` aliases do not shadow raw columns.
 
+**I.7 — Cached views and nested identities.** For a changed cache, list which readers reuse it and which writers can stale it, including legacy clients and secondary stores. Warm the cache, mutate through a different writer, then return before expiry. Check the rendered view or selection as well as the backing data. For a changed tree editor, follow a populated nested child through copy or delete. Check ID uniqueness in the consumer’s actual lookup scope and surviving references, including selection and conditions. Shared child IDs are valid when lookups always include the parent identity.
+
+For reports and quotas in I.6, compare the actual population, unit, timezone and retention policy on both sides. Exercise a boundary the diff changes, such as an overnight interval or cleanup with no new activity. Verify that missing observations and a measured zero have the intended meaning.
+
 ### Pass J — Security assertion trust (when the diff adds/changes a security test, detector, guard, or any test that claims to *prove* a security property)
 
 Load `references/detector-security-assertion-quality.md`. Challenge signal forgeability and enumeration completeness, construct a counterexample, and distrust a self-test that shares the production assertion's shape. Emit `category: "security"`; severity is `High` when a claimed security proof can pass without proving its control and `Blocking` when that false proof is itself a required merge/security gate.
+
+### Required workflow checks for changed state and contracts
+
+Apply the matching checks in existing detector and pattern-pass workers. Merge
+duplicate findings by failure mechanism. Use the canonical categories and
+severity rules.
+
+| Trigger | Owner | Evidence to check |
+|---|---|---|
+| Save, reload, search, hydration, undo, or route-exit code crosses an async boundary | Async races | Trace the submitted snapshot, persisted baseline, current draft and response owner separately. Exercise edit → save → revert/edit → response; old reload → newer save → old response; or first user edit → initial hydration, as relevant. Check both final persisted state and visible dirty/save/navigation state. Accept serialization or guards only if they cover every affected entry point. |
+| An existing serialized field, identifier, option, or migration changes | Backwards compatibility | Start with legacy persisted data and trace decoding before normalization, then reload or re-save. For resumable migrations, inspect which reader and writer own the resource while paused. Walk pause → partial edit → retry, including the condition that permits deleting the original. Check both update orders when Free and Pro share the contract. |
+| Setup, toggle, or later save can change the same persisted setting | UI-to-backend wiring | Trace all relevant writers and compare first setup with existing setup, manual disable, mode/provider switch, and a later save. Verify effective persisted state after reload. An incomplete current configuration alone does not establish first-time setup. |
+| Editor access, autosave, or an alternate mutation route changes | Permissions and capabilities | Trace actual access and persistence for the same least-privileged permitted role and scope, including autosave. Distinguish UI visibility, authorized users being blocked, and unauthorized server writes. |
+| Retry, callback, or refund writes durable state or money | Performance and data integrity | Trace operation identity, failed or uncertain completion, and duplicate delivery. If a replacement invoice or gateway can settle the same obligation, check that the old attempt cannot schedule another charge for an already-paid period. Verify that every monetary amount uses the correct unit and currency. Establish the gateway-specific contract for order, charge and buyer presentment before claiming a mismatch; a documented invariant or a reachable conversion guard can refute it. |
+| Dialog opener or close behavior, responsive controls, or direction-sensitive layout changes | Accessibility | Follow keyboard focus into and out of the dialog from the actual nested opener. When a widget prop introduces a sidebar, popup or new class, open its owning stylesheet even when it is unchanged. Expand nested selectors from their full parent and match the rendered element before judging layout. For affected layouts, verify narrow width and direction-sensitive overflow with the component mounted. Check an equivalent accessible path before reporting a blocked action. |
 
 ## Step 2b — Synthesis and disproof
 
