@@ -409,6 +409,8 @@ If any input produces a plausible-but-broken state, document it and either fix o
 
 For reports and quotas in I.6, compare the actual population, unit, timezone and retention policy on both sides. Exercise a boundary the diff changes, such as an overnight interval or cleanup with no new activity. Verify that missing observations and a measured zero have the intended meaning.
 
+**I.8 — Cleanup of shared, persisted resources.** When deletion depends on a reference lookup or an editable schema, apply the two cleanup checks in `references/detector-performance-and-data-integrity.md`. Verify both the surviving reference and final cleanup.
+
 ### Pass J — Security assertion trust (when the diff adds/changes a security test, detector, guard, or any test that claims to *prove* a security property)
 
 Load `references/detector-security-assertion-quality.md`. Challenge signal forgeability and enumeration completeness, construct a counterexample, and distrust a self-test that shares the production assertion's shape. Emit `category: "security"`; severity is `High` when a claimed security proof can pass without proving its control and `Blocking` when that false proof is itself a required merge/security gate.

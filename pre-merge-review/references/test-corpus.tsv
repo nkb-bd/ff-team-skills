@@ -43,3 +43,5 @@ local/pre-merge-review	#0	AuthorizationPolicy.php	Permission gate lets editors o
 local/pre-merge-review	#0	detector-security-assertion-quality.md	Security assertion trusts handler 403 as authorization denial	security
 local/pre-merge-review	#0	detector-security-assertion-quality.md	Security assertion checks only first mutating REST verb	security
 fluentform/fluentform-dev	#1246	TransferService.php:89	Import sanitizer rewrites every JSON key named autocomplete	perf-and-integrity
+fluentform/fluentform-dev	#1642	SubmissionService.php:534	Shared attachment references use different stored URL representations	data-integrity
+fluentform/fluentform-dev	#1642	SubmissionService.php:570	Historical attachment cleanup reads only the current form schema	data-integrity

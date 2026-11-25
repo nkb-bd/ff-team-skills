@@ -612,6 +612,15 @@ Severity: **High** (silent data corruption in aggregate output).
 
 ---
 
+## Shared resources and historical records
+
+When a change deletes a resource referenced by saved records, trace the stored identifier through candidate selection, the database prefilter, the final comparison and the deletion target.
+
+- **Equivalent representations.** Use two ordinary records that refer to the same resource using supported stored representations, for example a plain filename and a percent-encoded URL. Test both deletion orders. The first deletion must preserve the resource for the survivor and the final deletion must remove it. Check that the SQL prefilter admits every representation accepted by the comparison.
+- **Schema changes after capture.** Save a record under the original schema, rename or remove its field, then load the current schema in a fresh request and delete the historical record. Check the resource on disk or in storage. Run a control with an unrelated file that should survive. Check what evidence still identifies a resource as managed before recommending broader cleanup.
+
+Report which boundary was exercised and distinguish a failed lookup from an observed deletion. Examples: fluentform-dev#1642, review threads B-592F84B9 and B-D475582D.
+
 ## Test coverage skipped on data-integrity surface
 
 A test marked `skip()`, `markTestSkipped(...)`, or `@group skip` on a feature whose
