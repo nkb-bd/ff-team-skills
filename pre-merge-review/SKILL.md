@@ -279,6 +279,26 @@ Question 2 is the one that gets dropped, because a coverage-shaped question
 gets a coverage-shaped answer: "yes, both write paths are sanitized" is true
 and useless if one of them sanitizes far more than it should.
 
+**Question 1 has its own failure mode: a guard silently inherits an enclosing
+branch's short-circuit.** When a new guard reads a value that was itself
+computed by a ternary/if gated on a flag (`$isScoped`, `$isAdmin`, `$mode ===
+X`), the guard runs once in the source, but the source expression forks
+earlier for the branch populations — so the guard may be *reachable* for only
+one of them. Don't verify coverage by reading the line the guard sits on;
+build a 2-row truth table (one row per population of the enclosing condition)
+and trace what each row's execution actually sees by the time it reaches the
+guard. "I checked the `is_array()` check exists" is not verification unless
+you traced it for every population that flows through that ternary.
+
+Origin: PR fluentform-dev#1644 — `$stats = $isScoped ? false : get_transient($cacheKey)`
+followed by `if (false !== $stats && !is_array($stats))`. The guard was meant
+to purge a legacy serialized `Collection` left in the transient by a pre-fix
+build. For a scoped (form-restricted) viewer, `$stats` was hard-set to `false`
+before the guard ran, so the guard never read the transient and the legacy
+value lingered in `wp_options` until an unscoped viewer loaded the dashboard
+or the transient expired. The PR's own manual verification steps only
+exercised the unscoped admin path, so the gap wasn't caught before review.
+
 Anchor the check: name what confines the new guard to its intended target — a
 containing node, an element type, a route, a capability. "It matches on the key
 name" is not confinement. See **Key-name match without positional anchoring**
@@ -288,6 +308,8 @@ in `references/detector-performance-and-data-integrity.md`.
 Build an input carrying the same key in an unrelated branch and run it.
 
 For text transformations, round-trip a documented valid literal through the changed save, render or export path. Compare its value at the consumer. Check the field contract for intentionally reserved syntax before reporting content loss.
+
+**A general Semgrep rule for this shape was tried and rejected — don't re-attempt it without new evidence.** A rule matching "ternary assigns a literal sentinel to `$VAR` on one branch, then a later `if` compares `$VAR` against that same literal" fires correctly on the fluentform-dev#1644 shape, but it is indistinguishable from the ordinary "default value, then check if still default" idiom (`$label = isset(...) ? sanitize(...) : ''; if ('' !== $label) {...}`) — a 3-file sweep of this repo's `app/` turned up 3 matches, all benign defaults, 0 true positives. Tightening the rule to require a cleanup/purge call (`delete_transient`, `unset`, etc.) inside the guard body removes those false positives but then fails to fire on the actual historical bug, because the vulnerable commit's guard body held no such call — it just silently dropped the value. The two variants are mutually exclusive: loose enough to catch the real bug ⇒ too noisy to ship; tight enough to be quiet ⇒ blind to the real bug. This is a human-judgment call (does the guard's *purpose* need to survive every population, not just this one), not a syntactic one — stays a review-pass item.
 
 ### Pass B — Regression risk (all PR types)
 
